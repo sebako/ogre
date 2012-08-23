@@ -21,6 +21,7 @@ import java.awt.Desktop;
 import java.awt.Dimension;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
+import java.awt.Image;
 import java.awt.Insets;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -32,6 +33,7 @@ import java.net.MalformedURLException;
 import java.net.Proxy;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
@@ -53,8 +55,8 @@ import javax.swing.UIManager;
 import javax.swing.UIManager.LookAndFeelInfo;
 
 import de.bastisoft.ogre.FileMatch;
-import de.bastisoft.ogre.Scraper;
 import de.bastisoft.ogre.FileMatch.LineMatch;
+import de.bastisoft.ogre.Scraper;
 import de.bastisoft.ogre.event.ProgressListener;
 import de.bastisoft.ogre.event.ResultReceiver;
 import de.bastisoft.ogre.gui.Config.LookAndFeelSetting;
@@ -113,6 +115,13 @@ public class SearchFrame extends JFrame {
         
 		// Store config so that it can be used as a basis when saving the configuration on exit
 		this.loadedConfig = config;
+		
+		List<Image> icons = new ArrayList<>();
+		for (int size : new int[] {16, 32, 48, 128}) {
+		    System.out.println("tango/edit-find_" + size + ".png");
+		    icons.add(Resources.image("tango/edit-find_" + size + ".png"));
+		}
+	    setIconImages(icons);
 		
 		setDefaultCloseOperation(DO_NOTHING_ON_CLOSE);
 		setVisible(true);

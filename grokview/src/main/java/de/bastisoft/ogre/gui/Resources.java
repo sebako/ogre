@@ -18,6 +18,7 @@ package de.bastisoft.ogre.gui;
 
 import java.awt.Color;
 import java.awt.Graphics;
+import java.awt.Image;
 import java.awt.event.KeyEvent;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
@@ -105,6 +106,7 @@ public class Resources {
             names.put("file-match", "silk/page-modified.png");
             names.put("line-match", "fatcow/bullet_go.png");
             names.put("about",      "about.png");
+            
             icons = new IconCache("/img/", names);
         }
         return icons;
@@ -119,20 +121,20 @@ public class Resources {
         }
     }
     
-    public static Icon loadIcon(String name) {
+    public static Image image(String name) {
         BufferedImage img = new BufferedImage(16, 16, BufferedImage.TYPE_BYTE_GRAY);
         
-        URL url = Resources.class.getResource(name);
+        URL url = Resources.class.getResource("/img/" + name);
         if (url != null) {
             try (InputStream in = url.openStream()) {
-                img = ImageIO.read(in);
+                return ImageIO.read(in);
             }
             catch (IOException e) {
                 // ...
             }
         }
         
-        return new ImageIcon(img);
+        return img;
     }
     
 }
