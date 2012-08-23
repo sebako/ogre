@@ -1,2 +1,14 @@
 GrokView, a graphical OpenGrok client based on OGRE
 Copyright 2012 Sebastian Koppehel
+
+Includes icons from the Silk icon set by Mark James, redistributed under the
+Creative Commons Attribution 3.0 license. The full set is available from:
+http://www.famfamfam.com/lab/icons/silk/
+
+Includes icons from the FatCow Free Web Icons set, redistributed under the
+Creative Commons Attribution 3.0 license. The full set is available from:
+http://www.fatcow.com/free-icons
+
+Includes icons from the Tango Icon Library, released into the public domain.
+The full set is available from:
+http://tango.freedesktop.org/Tango_Icon_Library
