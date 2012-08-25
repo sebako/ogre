@@ -276,8 +276,10 @@ public class ServerSettingsDialog extends OkCancelDialog {
             try {
                 int port = Integer.parseInt(proxyPortField.getText());
                 header.removeMessage(MSGID_INVALID_PORT);
-                if (port < 0 || port > 65535)
+                if (port < 0 || port > 65535) {
                     header.addMessage(MSG_PORT_RANGE);
+                    return false;
+                }
                 else
                     header.removeMessage(MSGID_PORT_RANGE);
             }
