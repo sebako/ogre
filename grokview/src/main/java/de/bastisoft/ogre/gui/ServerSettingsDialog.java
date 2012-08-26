@@ -16,6 +16,7 @@
 
 package de.bastisoft.ogre.gui;
 
+import java.awt.Dimension;
 import java.awt.Frame;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
@@ -26,17 +27,23 @@ import java.net.MalformedURLException;
 import java.net.URL;
 
 import javax.swing.BorderFactory;
+import javax.swing.Box;
+import javax.swing.BoxLayout;
 import javax.swing.Icon;
 import javax.swing.JCheckBox;
+import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JSeparator;
+import javax.swing.JSpinner;
 import javax.swing.JTextField;
+import javax.swing.SpinnerNumberModel;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import javax.swing.text.AttributeSet;
 import javax.swing.text.BadLocationException;
 import javax.swing.text.PlainDocument;
 
+import de.bastisoft.util.swing.LabelText;
 import de.bastisoft.util.swing.SwingUtils;
 import de.bastisoft.util.swing.dialog.OkCancelDialog;
 import de.bastisoft.util.swing.header.StatusHeader;
@@ -70,6 +77,8 @@ public class ServerSettingsDialog extends OkCancelDialog {
     private JTextField urlField;
     private JTextField proxyHostField;
     private JTextField proxyPortField;
+    private JCheckBox pageLimitCheck;
+    private JSpinner pageLimitSpin;
     private JCheckBox fetchLinesCheck;
     private JCheckBox fetchLinesLastCheck;
     
@@ -97,7 +106,7 @@ public class ServerSettingsDialog extends OkCancelDialog {
         header = new StatusHeader(
                 Resources.string(RES_HEADER),
                 Resources.string(RES_STATUS_FINE),
-                headerIcon, 400);
+                headerIcon, 500);
         
         GridBagConstraints c = new GridBagConstraints();
         c.fill = GridBagConstraints.HORIZONTAL;
@@ -137,6 +146,10 @@ public class ServerSettingsDialog extends OkCancelDialog {
                    super.insertString(offs, str, a);
            }
         });
+        
+        pageLimitCheck = new JCheckBox();
+        SwingUtils.setText(pageLimitCheck, new LabelText("Limit result pages", 'M'));
+        JPanel pageLimitSub = pageLimitPanel();
         
         fetchLinesCheck = new JCheckBox();
         SwingUtils.setText(fetchLinesCheck, Resources.label(RES_FETCH_LINBS));
@@ -193,11 +206,44 @@ public class ServerSettingsDialog extends OkCancelDialog {
         c.gridwidth = 4;
         c.fill = GridBagConstraints.VERTICAL;
         c.insets = new Insets(15, 10, 0, 0);
+        panel.add(pageLimitCheck, c);
+        
+        c.gridy++;
+        c.insets = new Insets(5, 50, 0, 0);
+        panel.add(pageLimitSub, c);
+        
+        c.gridy++;
+        c.insets = new Insets(15, 10, 0, 0);
         panel.add(fetchLinesCheck, c);
         
         c.gridy++;
-        c.insets = new Insets(3, 10, 0, 0);
+        c.insets = new Insets(4, 10, 0, 0);
         panel.add(fetchLinesLastCheck, c);
+        
+        return panel;
+    }
+    
+    private JPanel pageLimitPanel() {
+        SpinnerNumberModel model = new SpinnerNumberModel();
+        model.setValue(10);
+        model.setMinimum(1);
+        pageLimitSpin = new JSpinner(model);
+        
+        Dimension dim = pageLimitSpin.getPreferredSize();
+        dim.width = 70;
+        pageLimitSpin.setPreferredSize(dim);
+        
+        JLabel label = new JLabel("Maximum number:");
+        label.setDisplayedMnemonic('A');
+        label.setLabelFor(pageLimitSpin);
+        
+        JPanel panel = new JPanel();
+        panel.setLayout(new BoxLayout(panel, BoxLayout.LINE_AXIS));
+        
+        panel.add(label);
+        panel.add(Box.createRigidArea(new Dimension(10, 0)));
+        panel.add(pageLimitSpin);
+        panel.add(Box.createGlue());
         
         return panel;
     }
