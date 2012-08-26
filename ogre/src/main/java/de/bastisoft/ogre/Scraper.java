@@ -124,13 +124,14 @@ public class Scraper {
             r.newLineMatches(match);
     }
     
-    public List<FileMatch> search(String query, String defs, String refs, String path, String project) throws ScraperException {
+    public List<FileMatch> search(String query, String defs, String refs, String path, String hist, String project) throws ScraperException {
         StringBuilder params = new StringBuilder();
         
         append(params, query, "q");
         append(params, defs, "defs");
         append(params, refs, "refs");
         append(params, path, "path");
+        append(params, hist, "hist");
         append(params, project, "project");
         
         int current = 0;

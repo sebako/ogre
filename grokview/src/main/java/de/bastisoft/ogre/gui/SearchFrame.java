@@ -347,6 +347,7 @@ public class SearchFrame extends JFrame {
 								inputs.getInput(Input.DEFS),
                                 inputs.getInput(Input.REFS),
                                 inputs.getInput(Input.PATH),
+                                inputs.getInput(Input.HIST),
                                 inputs.getInput(Input.PROJECT));
 						
 						SwingUtilities.invokeLater(new Runnable() {
