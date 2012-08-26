@@ -117,10 +117,8 @@ public class SearchFrame extends JFrame {
 		this.loadedConfig = config;
 		
 		List<Image> icons = new ArrayList<>();
-		for (int size : new int[] {16, 32, 48, 128}) {
-		    System.out.println("tango/edit-find_" + size + ".png");
+		for (int size : new int[] {16, 32, 48, 128})
 		    icons.add(Resources.image("tango/edit-find_" + size + ".png"));
-		}
 	    setIconImages(icons);
 		
 		setDefaultCloseOperation(DO_NOTHING_ON_CLOSE);

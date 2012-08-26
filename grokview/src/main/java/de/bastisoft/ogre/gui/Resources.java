@@ -98,14 +98,14 @@ public class Resources {
     public static IconCache icons() {
         if (icons == null) {
             Map<String, String> names = new HashMap<>();
-            names.put("add-server", "edit-server.png");
+            names.put("add-server", "tango/network-server.png");
             names.put("add",        "tango/list_add.png");
             names.put("delete",     "tango/list_remove.png");
             names.put("edit",       "silk/page_white_edit.png");
             names.put("dir-match",  "silk/folder.png");
             names.put("file-match", "silk/page-modified.png");
             names.put("line-match", "fatcow/bullet_go.png");
-            names.put("about",      "about.png");
+            names.put("about",      "tango/edit-find_48.png");
             
             icons = new IconCache("/img/", names);
         }
