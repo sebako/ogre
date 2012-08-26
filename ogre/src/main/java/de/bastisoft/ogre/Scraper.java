@@ -39,10 +39,11 @@ import de.bastisoft.ogre.event.ProgressListener.Phase;
 public class Scraper {
     
     public static final String VERSION = "0.1";
-    private static final String USER_AGENT = "OpenGrokScraper/" + VERSION;
+    private static final String USER_AGENT = "ogre/" + VERSION;
     
     private URL basicURL;
     private Proxy proxy;
+    private int pageLimit;
     private boolean fetchLines;
     private boolean fetchLinesLast;
     
@@ -59,6 +60,30 @@ public class Scraper {
     public Scraper(URL path, Proxy proxy) {
         this.basicURL = path;
         this.proxy = proxy;
+    }
+    
+    /**
+     * Sets the maximum number of result pages that will be fetched in a search run.
+     * A value of 0 or less means that no connection will be made to the server, and
+     * consequently no results will be received.
+     * 
+     * <p>A result page in this sense is a list of files with matches, including
+     * selected lines with matches from every file. For every file, there may or may
+     * not be a link on the result page leading to another page with more line
+     * matches for that file. Unless the scraper is configured to never fetch
+     * additional lines (see {@link #setFetchLines}), the scraper follows those links,
+     * and this will lead to more page retrievals in the general sense.
+     * 
+     * <p>Those retrievals <em>do not</em> add to the
+     * result page count that is limited by this setting. In other words, there may
+     * be more HTTP requests placed than the page limit during a search run. However,
+     * if additional line fetching is switched off, this limit actually does impose
+     * an effective upper limit on HTTP requests.
+     * 
+     * @param limit maximum number of result pages to fetch
+     */
+    public void setPageLimit(int limit) {
+        pageLimit = limit;
     }
     
     /**
