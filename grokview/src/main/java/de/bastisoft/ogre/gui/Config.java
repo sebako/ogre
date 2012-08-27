@@ -55,6 +55,8 @@ class Config {
     private static final String KEY_BASE_URL         = "base.url";
     private static final String KEY_PROXY_HOST       = "proxy.host";
     private static final String KEY_PROXY_PORT       = "proxy.port";
+    private static final String KEY_LIMIT_PAGES      = "limit.pages";
+    private static final String KEY_PAGE_LIMIT       = "page.limit";
     private static final String KEY_FETCH_LINES      = "fetch.lines";
     private static final String KEY_FETCH_LINES_LAST = "fetch.lines.last";
     
@@ -101,7 +103,7 @@ class Config {
     
     Config() {
         sites = new ArrayList<>();
-        sites.add(new Server(new ServerSettings("Default", "", "", 8080, true, true), new QueryInputs()));
+        sites.add(new Server(new ServerSettings("Default"), new QueryInputs()));
         frameState = null;
         
         lookAndFeelSetting = LookAndFeelSetting.DEFAULT;
@@ -139,10 +141,12 @@ class Config {
         String baseURL = props.get(KEY_BASE_URL, "");
         String proxyHost = props.get(KEY_PROXY_HOST, "");
         int proxyPort = props.getInt(KEY_PROXY_PORT, 8080);
+        boolean limitPages = props.getBool(KEY_LIMIT_PAGES, true);
+        int pageLimit = props.getInt(KEY_PAGE_LIMIT, 15);
         boolean fetchLines = props.getBool(KEY_FETCH_LINES, true);
         boolean fetchLinesLast = props.getBool(KEY_FETCH_LINES_LAST, true);
         
-        return new ServerSettings(name, baseURL, proxyHost, proxyPort, fetchLines, fetchLinesLast);
+        return new ServerSettings(name, baseURL, proxyHost, proxyPort, limitPages, pageLimit, fetchLines, fetchLinesLast);
     }
     
     private static QueryInputs readInputs(PropertyMap props) {
@@ -182,8 +186,10 @@ class Config {
             siteProps.set(KEY_NAME, site.serverSettings.name);
             siteProps.set(KEY_BASE_URL, site.serverSettings.baseURL);
             siteProps.set(KEY_PROXY_HOST, site.serverSettings.proxyHost);
-            siteProps.set(KEY_PROXY_PORT, Integer.toString(site.serverSettings.proxyPort));
+            siteProps.set(KEY_PROXY_PORT, site.serverSettings.proxyPort);
             
+            siteProps.set(KEY_LIMIT_PAGES, site.serverSettings.limitPages);
+            siteProps.set(KEY_PAGE_LIMIT, site.serverSettings.pageLimit);
             siteProps.set(KEY_FETCH_LINES, site.serverSettings.fetchLines);
             siteProps.set(KEY_FETCH_LINES_LAST, site.serverSettings.fetchLinesLast);
             

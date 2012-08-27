@@ -163,6 +163,12 @@ public class Scraper {
         
         try {
             List<FileMatch> results = new ArrayList<>();
+            
+            // Shortcut - if the page limit was set to a value less than 1, don't fetch anything
+            if (pageLimit < 1)
+                return results;
+            
+            /* This list will hold the additional pages that should be fetched */
             List<WebLink> pages = new ArrayList<>();
             
             notifyProgress(Phase.INITIAL, current, overall);
@@ -208,8 +214,8 @@ public class Scraper {
                     }
                 }
                 
-                if (nextPage < pages.size()) {
-                    notifyProgress(Phase.FILES, ++current, overall);
+                if (nextPage < pages.size() && ++current < pageLimit) {
+                    notifyProgress(Phase.FILES, current, overall);
                     WebLink nextLink = pages.get(nextPage++);
                     page = new ResultParser(fetch(nextLink), nextLink.url).parsePage();
                 }
@@ -233,11 +239,25 @@ public class Scraper {
         }
     }
     
+    /**
+     * Merge new links to result pages into our existing list of result pages to be visited.
+     * Because we'll get many links multiple times, this method makes sure we only add pages
+     * that are not yet on the list.
+     * 
+     * @param links existing links to result pages
+     * @param newLinks newly found links
+     * @return the merged link list
+     */
     private static int addPageLinks(List<WebLink> links, List<WebLink> newLinks) {
         int added = 0;
         
         outer:
             for (WebLink newLink : newLinks) {
+                
+                /* On the first result pages (the first 10 or so) we'll find a link to the
+                 * initial page. That is never on our list because we retrieved it through the
+                 * basic search URL at the start. Still we don't want to visit it again. */
+                
                 String urlstr = newLink.url.toExternalForm();
                 if (urlstr.contains("start=0&") || urlstr.endsWith("&start=0"))
                     continue;
