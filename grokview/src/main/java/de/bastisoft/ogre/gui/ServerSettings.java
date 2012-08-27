@@ -21,7 +21,9 @@ class ServerSettings {
     final String name;
     final String baseURL;
     final String proxyHost;
-    final int proxyPort;
+    final Integer proxyPort;
+    final boolean limitPages;
+    final int pageLimit;
     final boolean fetchLines;
     final boolean fetchLinesLast;
     
@@ -30,6 +32,8 @@ class ServerSettings {
         baseURL = "";
         proxyHost = "";
         proxyPort = 8080;
+        limitPages = true;
+        pageLimit = 15;
         fetchLines = true;
         fetchLinesLast = true;
     }
@@ -38,7 +42,9 @@ class ServerSettings {
             String name,
             String baseURL,
             String proxyHost,
-            int proxyPort,
+            Integer proxyPort,
+            boolean limitPages,
+            int pageLimit,
             boolean fetchLines,
             boolean fetchLinesLast) {
         
@@ -46,6 +52,8 @@ class ServerSettings {
         this.baseURL = baseURL;
         this.proxyHost = proxyHost;
         this.proxyPort = proxyPort;
+        this.limitPages = limitPages;
+        this.pageLimit = pageLimit;
         this.fetchLines = fetchLines;
         this.fetchLinesLast = fetchLinesLast;
     }

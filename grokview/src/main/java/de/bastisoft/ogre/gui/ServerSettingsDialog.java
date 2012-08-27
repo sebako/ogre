@@ -16,6 +16,7 @@
 
 package de.bastisoft.ogre.gui;
 
+import java.awt.Dimension;
 import java.awt.Frame;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
@@ -26,11 +27,16 @@ import java.net.MalformedURLException;
 import java.net.URL;
 
 import javax.swing.BorderFactory;
+import javax.swing.Box;
+import javax.swing.BoxLayout;
 import javax.swing.Icon;
 import javax.swing.JCheckBox;
+import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JSeparator;
+import javax.swing.JSpinner;
 import javax.swing.JTextField;
+import javax.swing.SpinnerNumberModel;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import javax.swing.text.AttributeSet;
@@ -45,18 +51,20 @@ import de.bastisoft.util.swing.header.StatusMessage.Severity;
 
 public class ServerSettingsDialog extends OkCancelDialog {
 
-    private static final String RES_PREFIX           = "server.settings.";
+    private static final String RES_PREFIX              = "server.settings.";
     
-    private static final String RES_TITLE            = RES_PREFIX + "dialog.title";
-    private static final String RES_HEADER           = RES_PREFIX + "dialog.header";
-    private static final String RES_NAME             = RES_PREFIX + "name";
-    private static final String RES_BASEURL          = RES_PREFIX + "base.url";
-    private static final String RES_PROXY_HOST       = RES_PREFIX + "proxy.host";
-    private static final String RES_PROXY_PORT       = RES_PREFIX + "proxy.port";
-    private static final String RES_FETCH_LINBS      = RES_PREFIX + "fetch.lines";
-    private static final String RES_FETCH_LINBS_LAST = RES_PREFIX + "fetch.lines.last";
-    private static final String RES_OK_BUTTON        = RES_PREFIX + "ok.button";
-    private static final String RES_CANCEL_BUTTON    = RES_PREFIX + "cancel.button";
+    private static final String RES_TITLE               = RES_PREFIX + "dialog.title";
+    private static final String RES_HEADER              = RES_PREFIX + "dialog.header";
+    private static final String RES_NAME                = RES_PREFIX + "name";
+    private static final String RES_BASEURL             = RES_PREFIX + "base.url";
+    private static final String RES_PROXY_HOST          = RES_PREFIX + "proxy.host";
+    private static final String RES_PROXY_PORT          = RES_PREFIX + "proxy.port";
+    private static final String RES_LIMIT_PAGES         = RES_PREFIX + "limit.pages";
+    private static final String RES_MAX_PAGES           = RES_PREFIX + "max.pages";
+    private static final String RES_FETCH_LINBS         = RES_PREFIX + "fetch.lines";
+    private static final String RES_FETCH_LINBS_LAST    = RES_PREFIX + "fetch.lines.last";
+    private static final String RES_OK_BUTTON           = RES_PREFIX + "ok.button";
+    private static final String RES_CANCEL_BUTTON       = RES_PREFIX + "cancel.button";
     
     private static final String RES_STATUS_FINE         = RES_PREFIX + "status.fine";
     private static final String RES_STATUS_NO_NAME      = RES_PREFIX + "status.no.name";
@@ -70,6 +78,8 @@ public class ServerSettingsDialog extends OkCancelDialog {
     private JTextField urlField;
     private JTextField proxyHostField;
     private JTextField proxyPortField;
+    private JCheckBox pageLimitCheck;
+    private JSpinner pageLimitSpin;
     private JCheckBox fetchLinesCheck;
     private JCheckBox fetchLinesLastCheck;
     
@@ -97,7 +107,7 @@ public class ServerSettingsDialog extends OkCancelDialog {
         header = new StatusHeader(
                 Resources.string(RES_HEADER),
                 Resources.string(RES_STATUS_FINE),
-                headerIcon, 400);
+                headerIcon, 500);
         
         GridBagConstraints c = new GridBagConstraints();
         c.fill = GridBagConstraints.HORIZONTAL;
@@ -137,6 +147,10 @@ public class ServerSettingsDialog extends OkCancelDialog {
                    super.insertString(offs, str, a);
            }
         });
+        
+        pageLimitCheck = new JCheckBox();
+        SwingUtils.setText(pageLimitCheck, Resources.label(RES_LIMIT_PAGES));
+        JPanel pageLimitSub = pageLimitPanel();
         
         fetchLinesCheck = new JCheckBox();
         SwingUtils.setText(fetchLinesCheck, Resources.label(RES_FETCH_LINBS));
@@ -193,11 +207,43 @@ public class ServerSettingsDialog extends OkCancelDialog {
         c.gridwidth = 4;
         c.fill = GridBagConstraints.VERTICAL;
         c.insets = new Insets(15, 10, 0, 0);
+        panel.add(pageLimitCheck, c);
+        
+        c.gridy++;
+        c.insets = new Insets(5, 50, 0, 0);
+        panel.add(pageLimitSub, c);
+        
+        c.gridy++;
+        c.insets = new Insets(15, 10, 0, 0);
         panel.add(fetchLinesCheck, c);
         
         c.gridy++;
-        c.insets = new Insets(3, 10, 0, 0);
+        c.insets = new Insets(4, 10, 0, 0);
         panel.add(fetchLinesLastCheck, c);
+        
+        return panel;
+    }
+    
+    private JPanel pageLimitPanel() {
+        SpinnerNumberModel model = new SpinnerNumberModel();
+        model.setValue(10);
+        model.setMinimum(1);
+        pageLimitSpin = new JSpinner(model);
+        
+        Dimension dim = pageLimitSpin.getPreferredSize();
+        dim.width = 70;
+        pageLimitSpin.setPreferredSize(dim);
+        
+        pageLimitLabel = SwingUtils.makeLabel(Resources.label(RES_MAX_PAGES));
+        pageLimitLabel.setLabelFor(pageLimitSpin);
+        
+        JPanel panel = new JPanel();
+        panel.setLayout(new BoxLayout(panel, BoxLayout.LINE_AXIS));
+        
+        panel.add(pageLimitLabel);
+        panel.add(Box.createRigidArea(new Dimension(10, 0)));
+        panel.add(pageLimitSpin);
+        panel.add(Box.createGlue());
         
         return panel;
     }
@@ -214,15 +260,24 @@ public class ServerSettingsDialog extends OkCancelDialog {
         proxyHostField.getDocument().addDocumentListener(docListener);
         proxyPortField.getDocument().addDocumentListener(docListener);
         
+        pageLimitCheck.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                updateEnables();
+            }
+        });
+        
         fetchLinesCheck.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                updateCheck();
+                updateEnables();
             }
         });
     }
     
-    private void updateCheck() {
+    private void updateEnables() {
+        pageLimitLabel.setEnabled(pageLimitCheck.isSelected());
+        pageLimitSpin.setEnabled(pageLimitCheck.isSelected());
         fetchLinesLastCheck.setEnabled(fetchLinesCheck.isSelected());
     }
     
@@ -239,6 +294,8 @@ public class ServerSettingsDialog extends OkCancelDialog {
     private static final StatusMessage MSG_NO_PORT      = new StatusMessage(MSGID_NO_PORT,      Severity.ERROR, Resources.string(RES_STATUS_NO_PORT));
     private static final StatusMessage MSG_INVALID_PORT = new StatusMessage(MSGID_INVALID_PORT, Severity.ERROR, Resources.string(RES_STATUS_INVALID_PORT));
     private static final StatusMessage MSG_PORT_RANGE   = new StatusMessage(MSGID_PORT_RANGE,   Severity.ERROR, Resources.string(RES_STATUS_PORT_RANGE));
+
+    private JLabel pageLimitLabel;
     
     @Override
     protected boolean ok() {
@@ -301,20 +358,28 @@ public class ServerSettingsDialog extends OkCancelDialog {
         urlField.setText(settings.baseURL);
         proxyHostField.setText(settings.proxyHost);
         proxyPortField.setText(Integer.toString(settings.proxyPort));
+        pageLimitCheck.setSelected(settings.limitPages);
+        pageLimitSpin.setValue(settings.pageLimit);
         fetchLinesCheck.setSelected(settings.fetchLines);
         fetchLinesLastCheck.setSelected(settings.fetchLinesLast);
         
-        updateCheck();
+        updateEnables();
         
         return run();
     }
     
     ServerSettings getServerSettings() {
+        String portText = proxyPortField.getText();
+        Integer port = portText.length() > 0 ? Integer.valueOf(portText) : null;
+        Integer pageLimit = (Integer) pageLimitSpin.getValue();
+        
         return new ServerSettings(
                 nameField.getText(),
                 urlField.getText(),
                 proxyHostField.getText(),
-                Integer.parseInt(proxyPortField.getText()),
+                port,
+                pageLimitCheck.isSelected(),
+                pageLimit,
                 fetchLinesCheck.isSelected(),
                 fetchLinesLastCheck.isSelected());
     }

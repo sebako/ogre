@@ -294,6 +294,8 @@ public class SearchFrame extends JFrame {
 		try {
 			URL baseURL = new URL(server.serverSettings.baseURL);
 			final Scraper scraper = new Scraper(baseURL, getProxy(server));
+			
+			scraper.setPageLimit(server.serverSettings.limitPages ? server.serverSettings.pageLimit : Integer.MAX_VALUE);
 			scraper.setFetchLines(server.serverSettings.fetchLines);
 			scraper.setFetchLinesLast(server.serverSettings.fetchLinesLast);
 			
