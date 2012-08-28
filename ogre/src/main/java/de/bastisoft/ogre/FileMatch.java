@@ -64,12 +64,12 @@ public class FileMatch {
     
     private String directory;
     private String filename;
-    private String xrefLink;
+    private WebLink xrefLink;
     private SortedMap<Integer, LineMatch> lineMatches;
     private boolean abridged;
     private WebLink moreLink;
     
-    FileMatch(String directory, String filename, String xrefLink) {
+    FileMatch(String directory, String filename, WebLink xrefLink) {
         this.directory = directory;
         this.filename = filename;
         this.xrefLink = xrefLink;
@@ -128,7 +128,7 @@ public class FileMatch {
         return directory + filename;
     }
     
-    public String getXrefLink() {
+    public WebLink getXrefLink() {
         return xrefLink;
     }
     

@@ -19,6 +19,7 @@ package de.bastisoft.ogre.gui.tree;
 import static de.bastisoft.ogre.gui.Resources.icon;
 
 import java.awt.Component;
+import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -29,8 +30,15 @@ import javax.swing.tree.DefaultTreeCellRenderer;
 import de.bastisoft.ogre.FileMatch;
 import de.bastisoft.ogre.FileMatch.Highlight;
 import de.bastisoft.ogre.FileMatch.LineMatch;
+import de.bastisoft.ogre.gui.Resources;
 
 class CellRenderer extends DefaultTreeCellRenderer {
+    
+    private static final String RES_PREFIX     = "tree.";
+    private static final String RES_ZERO_LINES = RES_PREFIX + "lines.zero";
+    private static final String RES_ONE_LINE   = RES_PREFIX + "lines.one";
+    private static final String RES_MORE_LINES = RES_PREFIX + "lines.multiple";
+    private static final String RES_ABRIDGED   = RES_PREFIX + "lines.abridged";
     
     private static final String COLOR_LINECOUNT     = "6070E0";
     private static final String COLOR_LINECOUNT_SEL = "C0D0FF";
@@ -94,13 +102,18 @@ class CellRenderer extends DefaultTreeCellRenderer {
         sb.append("<html>");
         sb.append(htmlEncode(match.getFilename()));
         sb.append(" <font color='#" + colorLineCount + "'>(");
-        sb.append(lines);
-        sb.append(" line");
-        if (lines > 1)
-            sb.append("s");
         
-        if (match.abridged())
-            sb.append(" &ndash; abridged");
+        if (lines == 0)
+            sb.append(Resources.string(RES_ZERO_LINES));
+        else if (lines == 1)
+            sb.append(Resources.string(RES_ONE_LINE));
+        else
+            sb.append(MessageFormat.format(Resources.string(RES_MORE_LINES), lines));
+        
+        if (match.abridged()) {
+            sb.append(" &ndash; ");
+            sb.append(Resources.string(RES_ABRIDGED));
+        }
         
         sb.append(")</font>");
         

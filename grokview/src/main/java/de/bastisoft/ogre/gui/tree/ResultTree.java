@@ -119,6 +119,13 @@ public class ResultTree extends JTree {
                     @Override public void run() { linkHandler.requested((LineMatch) o); }
                 });
             }
+            
+            // For file match, only do this if it has no lines
+            else if (o instanceof FileNode && linkHandler != null) {
+                SwingUtilities.invokeLater(new Runnable() {
+                    @Override public void run() { linkHandler.requested(((FileNode) o).fileMatch); }
+                });
+            }
         }
     }
     

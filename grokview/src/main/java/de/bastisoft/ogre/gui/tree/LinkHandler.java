@@ -16,10 +16,12 @@
 
 package de.bastisoft.ogre.gui.tree;
 
+import de.bastisoft.ogre.FileMatch;
 import de.bastisoft.ogre.FileMatch.LineMatch;
 
 public interface LinkHandler {
 
 	void requested(LineMatch match);
+	void requested(FileMatch match);
 	
 }

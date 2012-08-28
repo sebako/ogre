@@ -115,7 +115,17 @@ public class ResultParser {
         Element fileLink = elementForPath("td[@class='f']/a", rowElem);
         if (fileLink == null)
             throw new OgreParseException("Table column contains no link to file");
-        FileMatch hit = new FileMatch(dir, fileLink.getTextContent(), fileLink.getAttribute("href"));
+        
+        FileMatch hit;
+        try {
+            /* Hm... what happens if "href" attribute isn't set? The docURL becomes the xref link?
+             * We might want to handle that case. */
+            URL href = new URL(docURL, fileLink.getAttribute("href"));
+            hit = new FileMatch(dir, fileLink.getTextContent(), new WebLink(href, docURL));
+        }
+        catch (MalformedURLException e) {
+            hit = new FileMatch(dir, fileLink.getTextContent(), null);
+        }
         
         for (Element lineLink : elementsForPath("td/tt[@class='con']/a", rowElem)) {
             // Actual line links are marked as class "s"

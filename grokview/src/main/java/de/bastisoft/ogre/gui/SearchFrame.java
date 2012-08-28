@@ -33,6 +33,7 @@ import java.net.MalformedURLException;
 import java.net.Proxy;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -57,6 +58,7 @@ import javax.swing.UIManager.LookAndFeelInfo;
 import de.bastisoft.ogre.FileMatch;
 import de.bastisoft.ogre.FileMatch.LineMatch;
 import de.bastisoft.ogre.Scraper;
+import de.bastisoft.ogre.WebLink;
 import de.bastisoft.ogre.event.ProgressListener;
 import de.bastisoft.ogre.event.ResultReceiver;
 import de.bastisoft.ogre.gui.Config.LookAndFeelSetting;
@@ -78,6 +80,9 @@ public class SearchFrame extends JFrame {
     private static final String RES_NO_INPUT_MESSAGE     = RES_PREFIX + "no.input.message";
     private static final String RES_EMPTY_RESULT_TITLE   = RES_PREFIX + "empty.result.title";
     private static final String RES_EMPTY_RESULT_MESSAGE = RES_PREFIX + "empty.result.message";
+    private static final String RES_BROWSE_ERROR_TITLE   = RES_PREFIX + "browse.error.title";
+    private static final String RES_BROWSE_ERROR_LINK    = RES_PREFIX + "browse.error.link.message";
+    private static final String RES_BROWSE_ERROR_LAUNCH  = RES_PREFIX + "browse.error.launch.message";
     
     private JSplitPane splitPane;
 	private ServerChoicePanel serverChoicePanel;
@@ -224,19 +229,10 @@ public class SearchFrame extends JFrame {
 		
 		tree.setFileRequestHandler(new LinkHandler() {
 			@Override
-			public void requested(LineMatch match) {
-				if (desktop != null) {
-					try {
-						desktop.browse(match.link.url.toURI());
-					}
-					catch (IOException | URISyntaxException e) {
-						JOptionPane.showMessageDialog(SearchFrame.this,
-								"Invalid URL: " + e.getMessage(),
-								"Error opening file link",
-								JOptionPane.ERROR_MESSAGE);
-					}
-				}
-			}
+			public void requested(LineMatch match) { openLink(match.link); }
+			
+            @Override
+            public void requested(FileMatch match) { openLink(match.getXrefLink()); }
 		});
 		
 		aboutButton.addActionListener(new ActionListener() {
@@ -408,7 +404,26 @@ public class SearchFrame extends JFrame {
 		e.printStackTrace();
 	}
 	
-	private void saveConfig() {
+    private void openLink(WebLink link) {
+        if (link != null && desktop != null) {
+            try {
+                desktop.browse(link.url.toURI());
+            }
+            catch (URISyntaxException e) {
+                String title = Resources.string(RES_BROWSE_ERROR_TITLE);
+                String message = MessageFormat.format(Resources.string(RES_BROWSE_ERROR_LINK), e.getMessage());
+                JOptionPane.showMessageDialog(this, message, title, JOptionPane.ERROR_MESSAGE);
+            }
+            catch (IOException | UnsupportedOperationException | SecurityException e) {
+                // So many things that could go wrong :(
+                String title = Resources.string(RES_BROWSE_ERROR_TITLE);
+                String message = MessageFormat.format(Resources.string(RES_BROWSE_ERROR_LAUNCH), e.getMessage());
+                JOptionPane.showMessageDialog(this, message, title, JOptionPane.ERROR_MESSAGE);
+            }
+        }
+    }
+	
+    private void saveConfig() {
 		loadedConfig.sites = serverChoicePanel.getServers();
 		loadedConfig.frameState = recordState();
 		Config.saveConfig(loadedConfig);

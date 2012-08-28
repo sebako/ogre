@@ -64,7 +64,9 @@ public class ResultTreeModel implements TreeModel {
 
     @Override
     public boolean isLeaf(Object node) {
-        return node instanceof LineMatch;
+        return node instanceof LineMatch
+                || node instanceof FileNode
+                    && ((FileNode) node).fileMatch.getLines().size() == 0;
     }
 
     @Override
