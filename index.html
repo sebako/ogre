@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+    <meta charset='utf-8' />
+    <meta http-equiv="X-UA-Compatible" content="chrome=1" />
+    <meta name="description" content="Ogre : OGRE: OpenGrok Retrieval Engine" />
+
+    <link rel="stylesheet" type="text/css" media="screen" href="stylesheets/stylesheet.css">
+
+    <title>Ogre</title>
+  </head>
+
+  <body>
+
+    <!-- HEADER -->
+    <div id="header_wrap" class="outer">
+        <header class="inner">
+          <a id="forkme_banner" href="https://github.com/sebako/ogre">View on GitHub</a>
+
+          <h1 id="project_title">Ogre</h1>
+          <h2 id="project_tagline">OGRE: OpenGrok Retrieval Engine</h2>
+
+            <section id="downloads">
+              <a class="zip_download_link" href="https://github.com/sebako/ogre/zipball/master">Download this project as a .zip file</a>
+              <a class="tar_download_link" href="https://github.com/sebako/ogre/tarball/master">Download this project as a tar.gz file</a>
+            </section>
+        </header>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <div id="main_content_wrap" class="outer">
+      <section id="main_content" class="inner">
+        <h1>OGRE - OpenGrok Retrieval Engine</h1>
+
+<p>OGRE is a Java library that allows programmatic access to <a href="http://hub.opensolaris.org/bin/view/Project+opengrok/">OpenGrok</a> servers.
+Since OpenGrok provides no web service API in the strict sense - it ouputs XHTML,
+and the project maintains that the format will not change or change infrequently -
+this is effectively done by "web scraping", i.e. parsing the HTML output returned
+by the OpenGrok web server. The results are wrapped in Java objects and delivered
+to the caller.</p>
+
+<h2>Library usage</h2>
+
+<p><strong>Notice:</strong> This library can put a high, atypical load on servers that might be
+dimensioned for human readers browsing only a small part of the results. Certain
+measures are provided to reduce server load or allow servers to react
+appropriately, namely:</p>
+
+<ul>
+<li> The number of result pages that are browsed can be limited;</li>
+<li> Pages providing more line matches than shown on the result pages are
+also visited by default, but this can be switched off;</li>
+<li> The library sets a custom User-Agent header when contacting HTTP servers.</li>
+</ul><p>Nonetheless, users are <em>strongly discouraged</em> from accessing a site with this
+library without the consent of the administrator.</p>
+
+<h3>Basic search</h3>
+
+<p>The central starting point for a search run is the <code>Scraper</code> class. Before you
+can start searching, you must know the base URL of the OpenGrok server, that is
+to say, the URL that will bring up an empty search form. If a web proxy is
+necessary, proxy hostname and port must also be known.</p>
+
+<p>With this information, create a new <code>Scraper</code> instance:</p>
+
+<pre><code>Scraper scr = new Scraper(baseURL, proxy);
+</code></pre>
+
+<p>If no proxy is necessary, leave it <code>null</code>. Now you are ready to start your
+search. OpenGrok allows for five categories of search entries, plus project
+selection, and these are recognisable on most OpenGrok welcome pages as
+five entry fields (the project is usually selected in a list box); however
+in OGRE we will usually refer to them by certain shorter informal names:</p>
+
+<ol>
+<li>Full search (query)</li>
+<li>Definition (defs)</li>
+<li>Symbol (refs)</li>
+<li>File path (path)</li>
+<li>History (hist)</li>
+<li>Project (project)</li>
+</ol><p>When you have these, you start a search by calling the <code>search()</code> method
+of your scraper instance:</p>
+
+<pre><code>List&lt;FileMatch&gt; results = scr.search(quety, defs, refs, path, hist, project);
+</code></pre>
+
+<p>Of course the user doesn't have to supply search terms for all of these
+categories; the method accepts that <code>null</code> and empty or whitespace-only
+strings, and does not include such data in the query sent to the server.</p>
+      </section>
+    </div>
+
+    <!-- FOOTER  -->
+    <div id="footer_wrap" class="outer">
+      <footer class="inner">
+        <p class="copyright">Ogre maintained by <a href="https://github.com/sebako">sebako</a></p>
+        <p>Published with <a href="http://pages.github.com">GitHub Pages</a></p>
+      </footer>
+    </div>
+
+    
+
+  </body>
+</html>
