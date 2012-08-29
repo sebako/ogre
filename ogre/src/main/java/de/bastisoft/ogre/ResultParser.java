@@ -59,9 +59,9 @@ public class ResultParser {
     private Document doc;
     private URL docURL;
     
-    ResultParser(Document doc, URL docURL) {
-        this.doc = doc;
-        this.docURL = docURL;
+    ResultParser(FetchResponse response) {
+        doc = response.document;
+        docURL = response.url;
     }
     
     ResultPage parsePage() throws OgreParseException {

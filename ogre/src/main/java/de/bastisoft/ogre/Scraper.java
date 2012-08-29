@@ -29,12 +29,11 @@ import java.util.List;
 
 import javax.xml.parsers.ParserConfigurationException;
 
-import org.w3c.dom.Document;
 import org.xml.sax.SAXException;
 
 import de.bastisoft.ogre.event.ProgressListener;
-import de.bastisoft.ogre.event.ResultReceiver;
 import de.bastisoft.ogre.event.ProgressListener.Phase;
+import de.bastisoft.ogre.event.ResultReceiver;
 
 public class Scraper {
     
@@ -173,8 +172,9 @@ public class Scraper {
             List<WebLink> pages = new ArrayList<>();
             
             notifyProgress(Phase.INITIAL, current, overall);
-            URL searchURL = new URL(basicURL, "search?" + params);
-            ResultPage page = new ResultParser(fetch(new WebLink(searchURL, null)), searchURL).parsePage();
+            WebLink basicLink = followRedirect(new WebLink(basicURL, null));
+            WebLink searchLink = new WebLink(new URL(basicLink.url, "search?" + params), null);
+            ResultPage page = new ResultParser(fetch(searchLink)).parsePage();
             pages.addAll(page.pageLinks);
             
             int nextPage = 0;
@@ -208,8 +208,7 @@ public class Scraper {
                         for (FileMatch fileMatch : page.fileMatches)
                             if (fileMatch.abridged()) {
                                 notifyProgress(Phase.LINES, ++current, overall);
-                                Document doc = fetch(fileMatch.getMoreLink());
-                                new ResultParser(doc, fileMatch.getMoreLink().url).parseMore(fileMatch);
+                                new ResultParser(fetch(fileMatch.getMoreLink())).parseMore(fileMatch);
                                 notifyNewLineMatches(fileMatch);
                             }
                     }
@@ -218,7 +217,7 @@ public class Scraper {
                 if (nextPage < pages.size() && ++current < pageLimit) {
                     notifyProgress(Phase.FILES, current, overall);
                     WebLink nextLink = pages.get(nextPage++);
-                    page = new ResultParser(fetch(nextLink), nextLink.url).parsePage();
+                    page = new ResultParser(fetch(nextLink)).parsePage();
                 }
                 else
                     page = null;
@@ -228,8 +227,7 @@ public class Scraper {
                 for (FileMatch fileMatch : results)
                     if (fileMatch.abridged()) {
                         notifyProgress(Phase.LINES, ++current, overall);
-                        Document doc = fetch(fileMatch.getMoreLink());
-                        new ResultParser(doc, fileMatch.getMoreLink().url).parseMore(fileMatch);
+                        new ResultParser(fetch(fileMatch.getMoreLink())).parseMore(fileMatch);
                         notifyNewLineMatches(fileMatch);
                     }
             
@@ -296,13 +294,37 @@ public class Scraper {
         }
     }
     
-    private Document fetch(WebLink link) throws IOException, ParserConfigurationException, SAXException {
+    /**
+     * Checks a URL to see if it is redirected by the server. The returned WebLink object retains
+     * the original referer but, if the URL was redirected, contains a different destination URL.
+     * If there is no redirection, the new WebLink has the same URL as the original one.
+     * 
+     * @param link URL to check for redirection
+     * @return new link, possibly redirected
+     * @throws IOException if there's an error during the request
+     */
+    private WebLink followRedirect(WebLink link) throws IOException {
+        /* This is pretty horrible - we do a normal GET with a redirection-following HttpURLConnection,
+         * look at the returned URL, and throw away the content. We should use a proper HTTP library
+         * and issue a HEAD instead. */
+        
         HttpURLConnection conn = (HttpURLConnection) (proxy != null ? link.url.openConnection(proxy) : link.url.openConnection());
         conn.setRequestProperty("User-Agent", USER_AGENT);
         if (link.referer != null)
             conn.setRequestProperty("Referer", link.referer.toExternalForm());
         try (InputStream in = conn.getInputStream()) {
-            return new CorrectingReader(in, null).parse();
+            while (in.read() > -1);
+            return new WebLink(conn.getURL(), link.referer);
+        }
+    }
+    
+    private FetchResponse fetch(WebLink link) throws IOException, ParserConfigurationException, SAXException {
+        HttpURLConnection conn = (HttpURLConnection) (proxy != null ? link.url.openConnection(proxy) : link.url.openConnection());
+        conn.setRequestProperty("User-Agent", USER_AGENT);
+        if (link.referer != null)
+            conn.setRequestProperty("Referer", link.referer.toExternalForm());
+        try (InputStream in = conn.getInputStream()) {
+            return new FetchResponse(new CorrectingReader(in, null).parse(), conn.getURL());
         }
     }
     
