@@ -19,6 +19,7 @@ package de.bastisoft.ogre.gui;
 import java.awt.Cursor;
 import java.awt.Desktop;
 import java.awt.Dimension;
+import java.awt.Font;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Image;
@@ -52,6 +53,7 @@ import javax.swing.JScrollPane;
 import javax.swing.JSplitPane;
 import javax.swing.KeyStroke;
 import javax.swing.SwingUtilities;
+import javax.swing.UIDefaults;
 import javax.swing.UIManager;
 import javax.swing.UIManager.LookAndFeelInfo;
 
@@ -487,6 +489,29 @@ public class SearchFrame extends JFrame {
                         "Error setting look and feel",
                         JOptionPane.ERROR_MESSAGE);
             }
+        }
+        
+        /* A somewhat ugly hack to fix widget fonts on Windows: In Windows versions 6 (Vista) and 7,
+         * under non-classic themes, Swing application don't use the proper font for most widgets,
+         * although they do use it on menus. (Typically it should be Segoe UI, but is Tahoma.)
+         * 
+         * To fix this, if we're running the WindowsLookAndFeel, we take the correct font from the
+         * Menu.font default, and the incorrect font from Label.font. Then we replace the label
+         * font with the menu font everywhere we find it. Generally this cannot fix all Windows
+         * font quirks in Swing applications, but at least it seems to improve looks under most
+         * circumstances and should never do particular harm. */
+        
+        if (UIManager.getLookAndFeel().getClass().getName().equals("com.sun.java.swing.plaf.windows.WindowsLookAndFeel")
+                && System.getProperty("os.version").compareTo("6") > 0) {
+            
+            UIDefaults defaults = UIManager.getLookAndFeelDefaults();
+            
+            Font menuFont = UIManager.getFont("Menu.font");
+            Font labelFont = UIManager.getFont("Label.font");
+            
+            for (Object key : defaults.keySet())
+                if (labelFont.equals(defaults.get(key)))
+                    defaults.put(key, menuFont);
         }
         
         new SearchFrame(config);
