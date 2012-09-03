@@ -35,10 +35,13 @@ import de.bastisoft.ogre.event.ProgressListener;
 
 class StatusBar extends JPanel implements ProgressListener {
     
-    private static final String RES_PREFIX     = "status.";
-    private static final String RES_INCOMPLETE = RES_PREFIX + "results.incomplete";
-    private static final String RES_ABORTED    = RES_PREFIX + "search.aborted";
-    private static final String RES_PAGE_LIMIT = RES_PREFIX + "pagelimit.triggered";
+    private static final String RES_PREFIX      = "status.";
+    private static final String RES_DIRECTORIES = RES_PREFIX + "directories";
+    private static final String RES_FILES       = RES_PREFIX + "files";
+    private static final String RES_LINES       = RES_PREFIX + "lines";
+    private static final String RES_INCOMPLETE  = RES_PREFIX + "results.incomplete";
+    private static final String RES_ABORTED     = RES_PREFIX + "search.aborted";
+    private static final String RES_PAGE_LIMIT  = RES_PREFIX + "pagelimit.triggered";
     
     private static class CountPanel extends JPanel {
         
@@ -46,15 +49,15 @@ class StatusBar extends JPanel implements ProgressListener {
         
         CountPanel() {
             setLayout(new BoxLayout(this, BoxLayout.LINE_AXIS));
-            add(new JLabel("Directories:"));
+            add(new JLabel(Resources.string(RES_DIRECTORIES)));
             dirCountLabel = addLabel();
             
             add(Box.createRigidArea(new Dimension(8, 0)));
-            add(new JLabel("Files:"));
+            add(new JLabel(Resources.string(RES_FILES)));
             fileCountLabel = addLabel();
             
             add(Box.createRigidArea(new Dimension(8, 0)));
-            add(new JLabel("Lines:"));
+            add(new JLabel(Resources.string(RES_LINES)));
             lineCountLabel = addLabel();
         }
         
