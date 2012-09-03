@@ -60,6 +60,8 @@ class Config {
     private static final String KEY_FETCH_LINES      = "fetch.lines";
     private static final String KEY_FETCH_LINES_LAST = "fetch.lines.last";
     
+    private static final String KEY_SELECTED         = "selected";
+    
     
     // Query inputs
     
@@ -96,14 +98,15 @@ class Config {
     private static final String KEY_LOOK_AND_FEEL    = "look.and.feel";
     
     
-    List<Server> sites;
+    List<Server> servers;
+    Server selectedServer;
     FrameState frameState;
     LookAndFeelSetting lookAndFeelSetting;
     String lookAndFeel;
     
     Config() {
-        sites = new ArrayList<>();
-        sites.add(new Server(new ServerSettings("Default"), new QueryInputs()));
+        servers = new ArrayList<>();
+        servers.add(new Server(new ServerSettings("Default"), new QueryInputs()));
         frameState = null;
         
         lookAndFeelSetting = LookAndFeelSetting.DEFAULT;
@@ -115,9 +118,13 @@ class Config {
     private static Config read(PropertyMap props) {
         Config c = new Config();
         
-        c.sites.clear();
-        for (PropertyMap siteMap : props.submaps(PREFIX_SERVER))
-            c.sites.add(new Server(readServerSettings(siteMap), readInputs(siteMap.submap(PREFIX_INPUT))));
+        c.servers.clear();
+        for (PropertyMap serverMap : props.submaps(PREFIX_SERVER))
+            c.servers.add(new Server(readServerSettings(serverMap), readInputs(serverMap.submap(PREFIX_INPUT))));
+        
+        int selectedIndex = props.submap(PREFIX_SERVER).getInt(KEY_SELECTED, -1);
+        if (selectedIndex >= 0 && selectedIndex < c.servers.size())
+            c.selectedServer = c.servers.get(selectedIndex);
         
         PropertyMap guiProps = props.submap(PREFIX_FRAME);
         FrameState frameState = readFrameState(guiProps);
@@ -179,29 +186,38 @@ class Config {
     private PropertyMap write() {
         PropertyMap props = new PropertyMap();
         
-        for (int i = 0; i < sites.size(); i++) {
-            Server site = sites.get(i);
-            PropertyMap siteProps = new PropertyMap();
+        for (int i = 0; i < servers.size(); i++) {
+            Server server = servers.get(i);
+            PropertyMap serverProps = new PropertyMap();
             
-            siteProps.set(KEY_NAME, site.serverSettings.name);
-            siteProps.set(KEY_BASE_URL, site.serverSettings.baseURL);
-            siteProps.set(KEY_PROXY_HOST, site.serverSettings.proxyHost);
-            siteProps.set(KEY_PROXY_PORT, site.serverSettings.proxyPort);
+            serverProps.set(KEY_NAME, server.serverSettings.name);
+            serverProps.set(KEY_BASE_URL, server.serverSettings.baseURL);
+            serverProps.set(KEY_PROXY_HOST, server.serverSettings.proxyHost);
+            serverProps.set(KEY_PROXY_PORT, server.serverSettings.proxyPort);
             
-            siteProps.set(KEY_LIMIT_PAGES, site.serverSettings.limitPages);
-            siteProps.set(KEY_PAGE_LIMIT, site.serverSettings.pageLimit);
-            siteProps.set(KEY_FETCH_LINES, site.serverSettings.fetchLines);
-            siteProps.set(KEY_FETCH_LINES_LAST, site.serverSettings.fetchLinesLast);
+            serverProps.set(KEY_LIMIT_PAGES, server.serverSettings.limitPages);
+            serverProps.set(KEY_PAGE_LIMIT, server.serverSettings.pageLimit);
+            serverProps.set(KEY_FETCH_LINES, server.serverSettings.fetchLines);
+            serverProps.set(KEY_FETCH_LINES_LAST, server.serverSettings.fetchLinesLast);
             
             PropertyMap inputProps = new PropertyMap();
             for (Input input : Input.values()) {
                 String key = INPUT_KEYS.get(input);
                 if (key != null)
-                    inputProps.set(key, site.queryInputs.getInput(input));
+                    inputProps.set(key, server.queryInputs.getInput(input));
             }
             
-            siteProps.add(inputProps, PREFIX_INPUT);
-            props.addIndexed(siteProps, PREFIX_SERVER, i);
+            serverProps.add(inputProps, PREFIX_INPUT);
+            props.addIndexed(serverProps, PREFIX_SERVER, i);
+        }
+        
+        if (selectedServer != null) {
+            int selectedIndex = servers.indexOf(selectedServer);
+            if (selectedIndex > -1) {
+                PropertyMap serverProps = new PropertyMap();
+                serverProps.set(KEY_SELECTED, selectedIndex);
+                props.add(serverProps, PREFIX_SERVER);
+            }
         }
         
         PropertyMap guiProps = new PropertyMap();

@@ -58,7 +58,7 @@ public class Resources {
         
         Integer mnemonic = null, mnemonicIndex = null;
         try {
-            mnemonic = keyStroke(key + ".key").getKeyCode();
+            mnemonic = KeyStroke.getKeyStroke(string(key + ".key")).getKeyCode();
             mnemonicIndex = Integer.parseInt(strings.getString(key + ".index"));
         }
         catch (MissingResourceException | NumberFormatException e) {

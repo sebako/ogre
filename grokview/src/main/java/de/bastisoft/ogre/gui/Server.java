@@ -26,4 +26,9 @@ class Server {
         this.queryInputs = queryInputs;
     }
     
+    @Override
+    public String toString() {
+        return "server<" + serverSettings.name + ">";
+    }
+    
 }

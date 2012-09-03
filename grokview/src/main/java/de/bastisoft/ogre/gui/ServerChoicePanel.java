@@ -62,6 +62,8 @@ class ServerChoicePanel extends JPanel {
     
     private ServerSettingsDialog settingsDialog;
     
+    private boolean autoUpdate;
+    
     ServerChoicePanel(Frame parentFrame, ServerSelection selection) {
         this.parentFrame = parentFrame;
         this.selection = selection;
@@ -133,7 +135,9 @@ class ServerChoicePanel extends JPanel {
         combo.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                selection.setSelected((Server) combo.getSelectedItem());
+                // Do not propagate server selection while we are filling the list
+                if (!autoUpdate)
+                    selection.setSelected((Server) combo.getSelectedItem());
             }
         });
         
@@ -234,12 +238,20 @@ class ServerChoicePanel extends JPanel {
     
     void setServers(List<Server> servers) {
         this.servers = new ArrayList<>(servers);
+        
+        autoUpdate = true;
         combo.removeAllItems();
         for (Server server : servers)
             combo.addItem(server);
+        autoUpdate = false;
         
-        if (servers.size() > 0)
-            combo.setSelectedIndex(0);
+        if (servers.size() > 0) {
+            int selectedIndex = servers.indexOf(selection.getSelected());
+            System.out.println("selectedIndex = " + selectedIndex);
+            combo.setSelectedIndex(Math.max(selectedIndex, 0));
+        }
+        
+        updateButtons();
     }
     
     private static class ServerRenderer extends DefaultListCellRenderer {

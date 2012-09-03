@@ -38,6 +38,7 @@ import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Locale;
 
 import javax.swing.AbstractAction;
 import javax.swing.Action;
@@ -115,6 +116,7 @@ public class SearchFrame extends JFrame {
             desktop = Desktop.getDesktop();
         
         selection = new ServerSelection();
+        selection.setSelected(config.selectedServer);
         
         makeWidgets();
         makeActions();
@@ -125,7 +127,7 @@ public class SearchFrame extends JFrame {
         else
             setLocationRelativeTo(null);
         
-        serverChoicePanel.setServers(config.sites);
+        serverChoicePanel.setServers(config.servers);
         
         // Store config so that it can be used as a basis when saving the configuration on exit
         this.loadedConfig = config;
@@ -182,12 +184,12 @@ public class SearchFrame extends JFrame {
         queryPanel = new QueryPanel(selection);
         serverChoicePanel = new ServerChoicePanel(this, selection);
         
-        searchButton = new JButton(Resources.string(RES_SEARCH));
+        searchButton = SwingUtils.makeButton(Resources.label(RES_SEARCH));
         KeyStroke shortcut = Resources.keyStroke(RES_SEARCH_SHORTCUT);
         searchButton.setToolTipText(searchButton.getText() +
                 (shortcut != null ? " (" + Resources.formatKeyStroke(shortcut) + ")" : ""));
         
-        stopButton = new JButton(Resources.string(RES_STOP));
+        stopButton = SwingUtils.makeButton(Resources.label(RES_STOP));
         shortcut = Resources.keyStroke(RES_STOP_SHORTCUT);
         stopButton.setToolTipText(stopButton.getText() +
                 (shortcut != null ? " (" + Resources.formatKeyStroke(shortcut) + ")" : ""));
@@ -452,8 +454,9 @@ public class SearchFrame extends JFrame {
     }
     
     private void saveConfig() {
-        loadedConfig.sites = serverChoicePanel.getServers();
+        loadedConfig.servers = serverChoicePanel.getServers();
         loadedConfig.frameState = recordState();
+        loadedConfig.selectedServer = selection.getSelected();
         Config.saveConfig(loadedConfig);
     }
     
@@ -486,6 +489,7 @@ public class SearchFrame extends JFrame {
     }
     
     public static void main(String[] args) {
+//        Locale.setDefault(Locale.ENGLISH);
         Config config = Config.readConfig();
         
         if (config.lookAndFeelSetting != LookAndFeelSetting.DEFAULT) {
