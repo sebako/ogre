@@ -30,7 +30,7 @@ package de.bastisoft.ogre.event;
  */
 public interface ProgressListener {
 
-    public enum Phase { INITIAL, FILES, LINES }
+    public enum Phase { FILES, LINES }
     
     /**
      * Called before an HTTP request is performed.
@@ -40,6 +40,8 @@ public interface ProgressListener {
      * @param overall the overall number of requests that must be performed,
      *             as it has been determined at this point
      */
-    void progress(Phase phase, int current, int overall);
+    void progress(Phase phase, int current, int pending);
+    
+    void currentCounts(int dirCount, int fileCount, int lineCount);
     
 }

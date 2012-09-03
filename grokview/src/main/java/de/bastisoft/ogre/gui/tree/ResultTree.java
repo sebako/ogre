@@ -29,7 +29,7 @@ import javax.swing.event.TreeModelListener;
 import javax.swing.tree.TreePath;
 
 import de.bastisoft.ogre.FileMatch;
-import de.bastisoft.ogre.FileMatch.LineMatch;
+import de.bastisoft.ogre.LineMatch;
 
 /**
  * Tree component to display OpenGrok search results.
@@ -121,7 +121,7 @@ public class ResultTree extends JTree {
             }
             
             // For file match, only do this if it has no lines
-            else if (o instanceof FileNode && linkHandler != null) {
+            else if (o instanceof FileNode && model.isLeaf(o) && linkHandler != null) {
                 SwingUtilities.invokeLater(new Runnable() {
                     @Override public void run() { linkHandler.requested(((FileNode) o).fileMatch); }
                 });

@@ -106,6 +106,7 @@ public class Resources {
             names.put("file-match", "silk/page-modified.png");
             names.put("line-match", "fatcow/bullet_go.png");
             names.put("about",      "tango/edit-find_48.png");
+            names.put("notice",     "notice.png");
             
             icons = new IconCache("/img/", names);
         }

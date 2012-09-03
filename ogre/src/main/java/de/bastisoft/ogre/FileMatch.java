@@ -17,7 +17,6 @@
 package de.bastisoft.ogre;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.SortedMap;
 import java.util.TreeMap;
@@ -35,33 +34,6 @@ import java.util.TreeMap;
  */
 public class FileMatch {
 
-    public static class Highlight {
-        
-        public final int beginIndex, endIndex;
-        
-        public Highlight(int beginIndex, int endIndex) {
-            this.beginIndex = beginIndex;
-            this.endIndex = endIndex;
-        }
-        
-    }
-    
-    public static class LineMatch {
-        
-        public final int lineNumber;
-        public final String line;
-        public final WebLink link;
-        public final List<Highlight> highlights;
-        
-        private LineMatch(int lineNumber, String line, WebLink link, List<Highlight> highlights) {
-            this.lineNumber = lineNumber;
-            this.line = line;
-            this.link = link;
-            this.highlights = Collections.unmodifiableList(highlights);
-        }
-        
-    }
-    
     private String directory;
     private String filename;
     private WebLink xrefLink;
@@ -78,32 +50,42 @@ public class FileMatch {
     
     /**
      * Adds a new line to the line matches of the file match. Access to the line matches
-     * is threadsafe. Highlighted portions of the line match are supplied as a sequence of
-     * character positions, where start and end position of a highlight always follow each
-     * other. (The length of the position list obviously has to be even.)
+     * is threadsafe.
      * 
-     * @param lineNumber number of the new line
-     * @param line the line itself
-     * @param link the link to the file/line
-     * @param positions highlight positions
+     * @param line the line match
+     * @return <code>true</code> is the line was not yet known
      */
-    void addLine(int lineNumber, String line, WebLink link, List<Integer> positions) {
-        if (positions.size() % 2 > 0)
-            throw new IllegalArgumentException("positions.size() is odd");
-        
-        List<Highlight> hl = new ArrayList<>(positions.size() / 2);
-        for (int i = 0; i < positions.size() / 2; i++)
-            hl.add(new Highlight(positions.get(2 * i), positions.get(2 * i + 1)));
-        
+    boolean addLine(LineMatch line) {
         synchronized (lineMatches) {
-            lineMatches.put(lineNumber, new LineMatch(lineNumber, line, link, hl));
+            if (lineMatches.get(line.getLineNumber()) == null) {
+                lineMatches.put(line.getLineNumber(), line);
+                return true;
+            }
         }
+        
+        return false;
     }
     
-    void merge(FileMatch other) {
+    int merge(FileMatch other) {
+        int added;
+        
         synchronized (lineMatches) {
+            added = lineMatches.size();
             lineMatches.putAll(other.lineMatches);
+            added = lineMatches.size() - added;
         }
+        
+        /* How should we deal with the "abridged" status here? If either the existing
+         * match or the one that was merged in did not have abridged status - i.e., had
+         * all the line matches that exist in the file - then the merged match is also
+         * not abridged.
+         * 
+         * Incidentally, the "More" link should really be the same too. If we didn't
+         * have one before the merge, we don't need one. */
+        
+        abridged &= other.abridged;
+        
+        return added;
     }
     
     void setAbridged(WebLink moreLink) {
@@ -128,6 +110,10 @@ public class FileMatch {
         return directory + filename;
     }
     
+    /**
+     * Returns the link to the file in the cross 
+     * @return
+     */
     public WebLink getXrefLink() {
         return xrefLink;
     }

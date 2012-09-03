@@ -28,8 +28,8 @@ import javax.swing.JTree;
 import javax.swing.tree.DefaultTreeCellRenderer;
 
 import de.bastisoft.ogre.FileMatch;
-import de.bastisoft.ogre.FileMatch.Highlight;
-import de.bastisoft.ogre.FileMatch.LineMatch;
+import de.bastisoft.ogre.LineMatch;
+import de.bastisoft.ogre.LineMatch.Highlight;
 import de.bastisoft.ogre.gui.Resources;
 
 class CellRenderer extends DefaultTreeCellRenderer {
@@ -122,14 +122,16 @@ class CellRenderer extends DefaultTreeCellRenderer {
     }
     
     private void displayLineMatch(LineMatch match) {
+        String line = match.getLine();
+        
         int p = 0;
-        while (p < match.line.length() - 1 && Character.isWhitespace(match.line.charAt(p)))
+        while (p < line.length() - 1 && Character.isWhitespace(line.charAt(p)))
             p++;
         
-        List<Highlight> hl = new ArrayList<>(match.highlights.size());
-        for (Highlight h : match.highlights) {
-            int begin = h.beginIndex;
-            int end = h.endIndex;
+        List<Highlight> hl = new ArrayList<>(match.getHighlights().size());
+        for (Highlight h : match.getHighlights()) {
+            int begin = h.getStart();
+            int end = h.getEnd();
             
             if (end > p) {
                 if (begin < p)
@@ -140,18 +142,18 @@ class CellRenderer extends DefaultTreeCellRenderer {
         
         StringBuilder sb = new StringBuilder();
         sb.append("<html><font color='#" + colorLineNumber + "'>");
-        sb.append(match.lineNumber);
+        sb.append(match.getLineNumber());
         sb.append(":</font> ");
         
         for (Highlight h : hl) {
-            sb.append(htmlEncode(match.line.substring(p, h.beginIndex)));
+            sb.append(htmlEncode(line.substring(p, h.getStart())));
             sb.append("<font color='#" + colorHighlight + "'><b>");
-            sb.append(htmlEncode(match.line.substring(h.beginIndex, h.endIndex)));
+            sb.append(htmlEncode(line.substring(h.getStart(), h.getEnd())));
             sb.append("</b></font>");
-            p = h.endIndex;
+            p = h.getEnd();
         }
         
-        sb.append(htmlEncode(match.line.substring(p)));
+        sb.append(htmlEncode(line.substring(p)));
         
         setText(sb.toString());
         setIcon(lineIcon);

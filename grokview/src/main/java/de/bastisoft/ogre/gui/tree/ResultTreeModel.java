@@ -33,7 +33,7 @@ import javax.swing.tree.TreeModel;
 import javax.swing.tree.TreePath;
 
 import de.bastisoft.ogre.FileMatch;
-import de.bastisoft.ogre.FileMatch.LineMatch;
+import de.bastisoft.ogre.LineMatch;
 
 public class ResultTreeModel implements TreeModel {
 

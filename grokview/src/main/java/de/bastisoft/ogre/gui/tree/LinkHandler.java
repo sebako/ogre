@@ -17,7 +17,7 @@
 package de.bastisoft.ogre.gui.tree;
 
 import de.bastisoft.ogre.FileMatch;
-import de.bastisoft.ogre.FileMatch.LineMatch;
+import de.bastisoft.ogre.LineMatch;
 
 public interface LinkHandler {
 

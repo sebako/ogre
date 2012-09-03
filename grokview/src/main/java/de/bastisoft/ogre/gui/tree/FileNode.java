@@ -21,7 +21,7 @@ import java.util.List;
 import javax.swing.tree.TreePath;
 
 import de.bastisoft.ogre.FileMatch;
-import de.bastisoft.ogre.FileMatch.LineMatch;
+import de.bastisoft.ogre.LineMatch;
 
 class FileNode implements ResultTreeNode, Comparable<FileNode> {
 	

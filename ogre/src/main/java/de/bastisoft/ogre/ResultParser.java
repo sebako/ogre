@@ -130,7 +130,7 @@ public class ResultParser {
         for (Element lineLink : elementsForPath("td/tt[@class='con']/a", rowElem)) {
             // Actual line links are marked as class "s"
             if ("s".equals(lineLink.getAttribute("class")))
-                addLine(hit, lineLink);
+                hit.addLine(parseLine(lineLink));
             
             /* No-class link tags show up when all lines with hits are not shown in the
              * result table (for usability considerations presumably). They contain the
@@ -156,22 +156,25 @@ public class ResultParser {
      * The file match object is amended to record all line matches.
      * 
      * @param fileMatch file match object that will be amended
+     * @return 
      */
-    void parseMore(FileMatch fileMatch) throws OgreParseException {
+    List<LineMatch> parseMore() throws OgreParseException {
+        List<LineMatch> lines = new ArrayList<>();
+        
         String path = "/html/body/div[@id='page']/div[@id='content']/div[@id='more']/pre/a[@class='s']";
         for (Element el : elementsForPath(path, doc))
-            addLine(fileMatch, el);
+            lines.add(parseLine(el));
         
         /* Older versions of OpenGrok don't have the "content" div. */
         
         path = "/html/body/div[@id='page']/div[@id='more']/pre/a[@class='s']";
         for (Element el : elementsForPath(path, doc))
-            addLine(fileMatch, el);
+            lines.add(parseLine(el));
         
-        fileMatch.setUnabridged();
+        return lines;
     }
     
-    private void addLine(FileMatch hit, Element lineLink) throws OgreParseException {
+    private LineMatch parseLine(Element lineLink) throws OgreParseException {
         NodeList nl = lineLink.getChildNodes();
         
         int lineNumber = -1;
@@ -190,8 +193,7 @@ public class ResultParser {
                         lineNumber = Integer.parseInt(el.getTextContent());
                     }
                     catch (NumberFormatException e) {
-                        throw new OgreParseException("Error parsing line number for file " + hit.getDirectory()
-                                + hit.getFilename() + ": "+ e.getMessage(), e);
+                        throw new OgreParseException("Error parsing line number: "+ e.getMessage(), e);
                     }
                 }
                 else if ("b".equals(el.getTagName())) {
@@ -203,14 +205,14 @@ public class ResultParser {
         }
         
         if (lineNumber == -1)
-            throw new OgreParseException("No line number found for file " + hit.getDirectory() + hit.getFilename());
+            throw new OgreParseException("No line number found");
         
         try {
             URL href = new URL(docURL, lineLink.getAttribute("href"));
-            hit.addLine(lineNumber, text.toString(), new WebLink(href, docURL), positions);
+            return new LineMatch(lineNumber, text.toString(), new WebLink(href, docURL), positions);
         }
         catch (MalformedURLException e) {
-            hit.addLine(lineNumber, text.toString(), null, positions);
+            return new LineMatch(lineNumber, text.toString(), null, positions);
         }
         
     }

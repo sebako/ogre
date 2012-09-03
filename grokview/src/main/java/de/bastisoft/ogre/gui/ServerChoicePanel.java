@@ -62,7 +62,8 @@ class ServerChoicePanel extends JPanel {
     
     private ServerSettingsDialog settingsDialog;
     
-    ServerChoicePanel(ServerSelection selection) {
+    ServerChoicePanel(Frame parentFrame, ServerSelection selection) {
+        this.parentFrame = parentFrame;
         this.selection = selection;
         servers = new ArrayList<>();
         

@@ -25,7 +25,6 @@ import java.net.URL;
 import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.List;
 
 import javax.xml.parsers.ParserConfigurationException;
 
@@ -43,6 +42,7 @@ public class Scraper {
     private URL basicURL;
     private Proxy proxy;
     private int pageLimit;
+    private boolean aborted;
     private boolean fetchLines;
     private boolean fetchLinesLast;
     
@@ -50,15 +50,33 @@ public class Scraper {
     private Collection<ResultReceiver> resultReceivers;
     
     {
+        pageLimit = 20;
         fetchLines = true;
         fetchLinesLast = true;
         progressListeners = new ArrayList<>();
         resultReceivers = new ArrayList<>();
     }
     
+    /**
+     * Create a new scraper instance that uses a given URL as the search entry point,
+     * and does not go through a proxy server.
+     * 
+     * @param path URL of the OpenGrok search form
+     */
+    public Scraper(URL path) {
+        this(path, Proxy.NO_PROXY);
+    }
+    
+    /**
+     * Create a new scraper instance that uses a given URL as the search entry point,
+     * and goes through a proxy server to access the server.
+     * 
+     * @param path URL of the OpenGrok search form
+     * @param proxy proxy configuration to be used when accessing the server
+     */
     public Scraper(URL path, Proxy proxy) {
         this.basicURL = path;
-        this.proxy = proxy;
+        this.proxy = proxy == null ? Proxy.NO_PROXY : proxy;
     }
     
     /**
@@ -123,6 +141,10 @@ public class Scraper {
         progressListeners.add(listener);
     }
     
+    public void abort() {
+        aborted = true;
+    }
+    
     /**
      * Adds a result receiver that will receive the full result after a retrieval run
      * has been completed.
@@ -138,6 +160,11 @@ public class Scraper {
             l.progress(phase, current, overall);
     }
     
+    private void notifyCounts(SearchResult result) {
+        for (ProgressListener l : progressListeners)
+            l.currentCounts(result.dirCount(), result.fileCount(), result.lineCount());
+    }
+    
     private void notifyNewFileMatches(Collection<FileMatch> matches) {
         for (ResultReceiver r : resultReceivers)
             r.newFileMatches(matches);
@@ -148,7 +175,28 @@ public class Scraper {
             r.newLineMatches(match);
     }
     
-    public List<FileMatch> search(String query, String defs, String refs, String path, String hist, String project) throws ScraperException {
+    /**
+     * Places a search with the OpenGrok server, retrieves the results and returns them to
+     * the caller. A call to this method can and typically will lead to multiple HTTP requests
+     * to the server.
+     * 
+     * <p>Not all query fields have to be used. If a query field passed to this method is
+     * <code>null</code>, or empty, or consists only of whitespace, the field will not be
+     * included in the search request.
+     * 
+     * @param query search terms for the OpenGrok "Full search" field
+     * @param defs search terms for the OpenGrok "Definition" field
+     * @param refs search terms for the OpenGrok "Symbol" field
+     * @param path search terms for the OpenGrok "File path" field
+     * @param hist search terms for the OpenGrok "History" field
+     * @param project the project(s) to search for multi-project OpenGrok servers
+     * @return list of file matches returned by the search
+     * @throws ScraperException if communication failures prevent a successful completion of
+     *          the query, or if an error is encountered while parsing the result pages
+     */
+    public SearchResult search(String query, String defs, String refs, String path, String hist, String project) throws ScraperException {
+        aborted = false;
+        
         StringBuilder params = new StringBuilder();
         
         append(params, query, "q");
@@ -158,118 +206,67 @@ public class Scraper {
         append(params, hist, "hist");
         append(params, project, "project");
         
-        int current = 0;
-        int overall = 1;
-        
         try {
-            List<FileMatch> results = new ArrayList<>();
-            
-            // Shortcut - if the page limit was set to a value less than 1, don't fetch anything
-            if (pageLimit < 1)
-                return results;
-            
-            /* This list will hold the additional pages that should be fetched */
-            List<WebLink> pages = new ArrayList<>();
-            
-            notifyProgress(Phase.INITIAL, current, overall);
             WebLink basicLink = followRedirect(new WebLink(basicURL, null));
-            WebLink searchLink = new WebLink(new URL(basicLink.url, "search?" + params), null);
-            ResultPage page = new ResultParser(fetch(searchLink)).parsePage();
-            pages.addAll(page.pageLinks);
+            SearchResult result = new SearchResult(new WebLink(new URL(basicLink.url, "search?" + params), null));
             
-            int nextPage = 0;
-            overall += pages.size();
+            int current = 0;
+            int pagecount = 0;
             
-            while (page != null) {
+            WebLink next = null;
+            while ((next = result.nextPage()) != null && pagecount < pageLimit && !aborted) {
+                int pending = result.unfetchedPageCount();
+                if (fetchLines) pending += result.abridgedFileCount();
+                notifyProgress(Phase.FILES, current, pending);
+                current++;
+                pagecount++;
+                
+                ResultPage page = new ResultParser(fetch(next)).parsePage();
+                result.notifyFetched(page);
+                
                 Collection<FileMatch> newMatches = new ArrayList<>();
-                
-                addFileMatches:
-                    for (FileMatch match : page.fileMatches) {
-                        for (FileMatch existing : results)
-                            if (existing.getFullName().equals(match.getFullName())) {
-                                existing.merge(match);
-                                notifyNewLineMatches(existing);
-                                continue addFileMatches;
-                            }
+                for (FileMatch match : page.fileMatches) {
+                    FileMatch merged = result.mergeFileMatch(match);
+                    if (merged != match)
+                        notifyNewLineMatches(merged);
+                    else
                         newMatches.add(match);
-                    }
+                }
                 
-                results.addAll(newMatches);
                 notifyNewFileMatches(newMatches);
+                notifyCounts(result);
                 
-                overall += addPageLinks(pages, page.pageLinks);
-                
-                if (fetchLines) {
-                    for (FileMatch fileMatch : page.fileMatches)
-                        if (fileMatch.abridged())
-                            overall++;
-                    
-                    if (!fetchLinesLast) {
-                        for (FileMatch fileMatch : page.fileMatches)
-                            if (fileMatch.abridged()) {
-                                notifyProgress(Phase.LINES, ++current, overall);
-                                new ResultParser(fetch(fileMatch.getMoreLink())).parseMore(fileMatch);
-                                notifyNewLineMatches(fileMatch);
-                            }
+                if (fetchLines && !fetchLinesLast) {
+                    pending = result.unfetchedPageCount() + result.abridgedFileCount();
+                    FileMatch match;
+                    while ((match = result.nextAbridgedFile()) != null && !aborted) {
+                        notifyProgress(Phase.LINES, current++, pending--);
+                        result.mergeLines(match, new ResultParser(fetch(match.getMoreLink())).parseMore());
+                        notifyNewLineMatches(match);
+                        notifyCounts(result);
                     }
                 }
-                
-                if (nextPage < pages.size() && ++current < pageLimit) {
-                    notifyProgress(Phase.FILES, current, overall);
-                    WebLink nextLink = pages.get(nextPage++);
-                    page = new ResultParser(fetch(nextLink)).parsePage();
-                }
-                else
-                    page = null;
             }
             
-            if (fetchLines && fetchLinesLast)
-                for (FileMatch fileMatch : results)
-                    if (fileMatch.abridged()) {
-                        notifyProgress(Phase.LINES, ++current, overall);
-                        new ResultParser(fetch(fileMatch.getMoreLink())).parseMore(fileMatch);
-                        notifyNewLineMatches(fileMatch);
-                    }
+            if (fetchLines && fetchLinesLast) {
+                int pending = result.unfetchedPageCount() + result.abridgedFileCount();
+                FileMatch match;
+                while ((match = result.nextAbridgedFile()) != null && !aborted) {
+                    notifyProgress(Phase.LINES, current++, pending--);
+                    result.mergeLines(match, new ResultParser(fetch(match.getMoreLink())).parseMore());
+                    notifyNewLineMatches(match);
+                    notifyCounts(result);
+                }
+            }
             
-            return results;
+            result.setPageLimitTriggered(next != null && pagecount >= pageLimit);
+            result.setAborted(aborted);
+            
+            return result;
         }
         catch (IOException | ParserConfigurationException | SAXException e) {
             throw new ScraperException("Error executing search query: " + e.getMessage(), e);
         }
-    }
-    
-    /**
-     * Merge new links to result pages into our existing list of result pages to be visited.
-     * Because we'll get many links multiple times, this method makes sure we only add pages
-     * that are not yet on the list.
-     * 
-     * @param links existing links to result pages
-     * @param newLinks newly found links
-     * @return the merged link list
-     */
-    private static int addPageLinks(List<WebLink> links, List<WebLink> newLinks) {
-        int added = 0;
-        
-        outer:
-            for (WebLink newLink : newLinks) {
-                
-                /* On the first result pages (the first 10 or so) we'll find a link to the
-                 * initial page. That is never on our list because we retrieved it through the
-                 * basic search URL at the start. Still we don't want to visit it again. */
-                
-                String urlstr = newLink.url.toExternalForm();
-                if (urlstr.contains("start=0&") || urlstr.endsWith("&start=0"))
-                    continue;
-                
-                for (WebLink oldLink : links)
-                    if (newLink.url.equals(oldLink.url))
-                        continue outer;
-                
-                links.add(newLink);
-                added++;
-            }
-        
-        return added;
     }
     
     private static void append(StringBuilder sb, String value, String tag) {

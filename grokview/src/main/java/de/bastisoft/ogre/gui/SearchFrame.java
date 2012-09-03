@@ -43,6 +43,8 @@ import javax.swing.AbstractAction;
 import javax.swing.Action;
 import javax.swing.ActionMap;
 import javax.swing.BorderFactory;
+import javax.swing.Box;
+import javax.swing.BoxLayout;
 import javax.swing.InputMap;
 import javax.swing.JButton;
 import javax.swing.JComponent;
@@ -58,15 +60,16 @@ import javax.swing.UIManager;
 import javax.swing.UIManager.LookAndFeelInfo;
 
 import de.bastisoft.ogre.FileMatch;
-import de.bastisoft.ogre.FileMatch.LineMatch;
+import de.bastisoft.ogre.LineMatch;
 import de.bastisoft.ogre.Scraper;
+import de.bastisoft.ogre.SearchResult;
 import de.bastisoft.ogre.WebLink;
-import de.bastisoft.ogre.event.ProgressListener;
 import de.bastisoft.ogre.event.ResultReceiver;
 import de.bastisoft.ogre.gui.Config.LookAndFeelSetting;
 import de.bastisoft.ogre.gui.QueryInputs.Input;
 import de.bastisoft.ogre.gui.tree.LinkHandler;
 import de.bastisoft.ogre.gui.tree.ResultTree;
+import de.bastisoft.util.swing.SwingUtils;
 
 public class SearchFrame extends JFrame {
     
@@ -75,7 +78,9 @@ public class SearchFrame extends JFrame {
     
     private static final String RES_PREFIX               = "main.";
     private static final String RES_SEARCH               = RES_PREFIX + "search";
-    private static final String RES_SEARCH_SHORTCUT      = RES_PREFIX + "search.shurtcut";
+    private static final String RES_SEARCH_SHORTCUT      = RES_PREFIX + "search.shortcut";
+    private static final String RES_STOP                 = RES_PREFIX + "stop";
+    private static final String RES_STOP_SHORTCUT        = RES_PREFIX + "stop.shortcut";
     private static final String RES_NO_SERVER_TITLE      = RES_PREFIX + "no.server.title";
     private static final String RES_NO_SERVER_MESSAGE    = RES_PREFIX + "no.server.message";
     private static final String RES_NO_INPUT_TITLE       = RES_PREFIX + "no.input.title";
@@ -90,14 +95,16 @@ public class SearchFrame extends JFrame {
     private ServerChoicePanel serverChoicePanel;
     private QueryPanel queryPanel;
     private JButton searchButton;
+    private JButton stopButton;
     private JButton aboutButton;
-    private StatusLabel statusLabel;
+    private StatusBar statusBar;
     private ResultTree tree;
     
     private AboutDialog aboutDialog;
     private Desktop desktop;
     
     private boolean searchRunning;
+    private Scraper scraper;
     private Config loadedConfig;
     private ServerSelection selection;
     
@@ -151,7 +158,7 @@ public class SearchFrame extends JFrame {
         splitPane.setBorder(null);
         splitPane.resetToPreferredSizes();
         
-        statusLabel = new StatusLabel();
+        statusBar = new StatusBar();
         
         GridBagConstraints c = new GridBagConstraints();
         c.gridx = 0;
@@ -164,7 +171,7 @@ public class SearchFrame extends JFrame {
         c.fill = GridBagConstraints.BOTH;
         c.anchor = GridBagConstraints.LINE_START;
         c.insets = new Insets(0, 4, 4, 4);
-        panel.add(statusLabel, c);
+        panel.add(statusBar, c);
     }
     
     private JPanel makeSideBar() {
@@ -173,12 +180,20 @@ public class SearchFrame extends JFrame {
         panel.setLayout(new GridBagLayout());
         
         queryPanel = new QueryPanel(selection);
-        serverChoicePanel = new ServerChoicePanel(selection);
+        serverChoicePanel = new ServerChoicePanel(this, selection);
         
         searchButton = new JButton(Resources.string(RES_SEARCH));
         KeyStroke shortcut = Resources.keyStroke(RES_SEARCH_SHORTCUT);
         searchButton.setToolTipText(searchButton.getText() +
                 (shortcut != null ? " (" + Resources.formatKeyStroke(shortcut) + ")" : ""));
+        
+        stopButton = new JButton(Resources.string(RES_STOP));
+        shortcut = Resources.keyStroke(RES_STOP_SHORTCUT);
+        stopButton.setToolTipText(stopButton.getText() +
+                (shortcut != null ? " (" + Resources.formatKeyStroke(shortcut) + ")" : ""));
+        stopButton.setEnabled(false);
+        
+        SwingUtils.equalizeButtons(searchButton, stopButton);
         
         aboutButton = new JButton("<html><font color='#0000C0'><u>About</u></font>");
         aboutButton.setBorder(BorderFactory.createEmptyBorder());
@@ -194,18 +209,22 @@ public class SearchFrame extends JFrame {
         c.insets = new Insets(5, 5, 0, 5);
         panel.add(serverChoicePanel, c);
         
-        c.insets = new Insets(20, 5, 20, 5);
+        c.insets = new Insets(20, 5, 0, 5);
         panel.add(queryPanel, c);
         
-        c.weightx = 0;
+        JPanel buttonPanel = new JPanel();
+        buttonPanel.setLayout(new BoxLayout(buttonPanel, BoxLayout.LINE_AXIS));
+        buttonPanel.add(Box.createGlue());
+        buttonPanel.add(stopButton);
+        buttonPanel.add(Box.createRigidArea(new Dimension(5, 0)));
+        buttonPanel.add(searchButton);
+        
+        panel.add(buttonPanel, c);
+        
         c.weighty = 1;
         c.fill = GridBagConstraints.NONE;
-        c.anchor = GridBagConstraints.FIRST_LINE_END;
-        c.insets = new Insets(0, 0, 5, 5);
-        panel.add(searchButton, c);
-        
-        c.weighty = 0;
         c.anchor = GridBagConstraints.LAST_LINE_END;
+        c.insets = new Insets(20, 5, 5, 5);
         panel.add(aboutButton, c);
         
         return panel;
@@ -219,19 +238,31 @@ public class SearchFrame extends JFrame {
             }
         };
         
+        Action stopAction = new AbstractAction() {
+            @Override    
+            public void actionPerformed(ActionEvent e) {
+                stopSearch();
+            }
+        };
+        
         searchButton.addActionListener(searchAction);
+        stopButton.addActionListener(stopAction);
         
         InputMap inputMap = getRootPane().getInputMap(JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT);
         KeyStroke shortcut = Resources.keyStroke(RES_SEARCH_SHORTCUT);
         if (shortcut != null)
             inputMap.put(shortcut, "search");
+        shortcut = Resources.keyStroke(RES_STOP_SHORTCUT);
+        if (shortcut != null)
+            inputMap.put(shortcut, "stop");
         
         ActionMap actionMap = getRootPane().getActionMap();
         actionMap.put("search", searchAction);
+        actionMap.put("stop", stopAction);
         
         tree.setFileRequestHandler(new LinkHandler() {
             @Override
-            public void requested(LineMatch match) { openLink(match.link); }
+            public void requested(LineMatch match) { openLink(match.getLink()); }
             
             @Override
             public void requested(FileMatch match) { openLink(match.getXrefLink()); }
@@ -285,32 +316,18 @@ public class SearchFrame extends JFrame {
             return;
         }
         
-        searchRunning = true;
-        searchButton.setEnabled(false);
+        setRunning(true);
         tree.reset();
         
         try {
             URL baseURL = new URL(server.serverSettings.baseURL);
-            final Scraper scraper = new Scraper(baseURL, getProxy(server));
+            scraper = new Scraper(baseURL, getProxy(server));
             
             scraper.setPageLimit(server.serverSettings.limitPages ? server.serverSettings.pageLimit : Integer.MAX_VALUE);
             scraper.setFetchLines(server.serverSettings.fetchLines);
             scraper.setFetchLinesLast(server.serverSettings.fetchLinesLast);
             
-            scraper.addProgressListener(new ProgressListener() {
-                
-                @Override
-                public void progress(final Phase phase, final int current,
-                        final int overall) {
-                    SwingUtilities.invokeLater(new Runnable() {
-                        @Override
-                        public void run() {
-                            statusLabel.progress(phase, current, overall);
-                        }
-                    });
-                }
-                
-            });
+            scraper.addProgressListener(statusBar);
             
             scraper.addResultReceiver(new ResultReceiver() {
                 
@@ -336,13 +353,13 @@ public class SearchFrame extends JFrame {
                 
             });
             
-            statusLabel.queryStarted();
+            statusBar.queryStarted();
             
             final QueryInputs inputs = selection.getSelected().queryInputs;
             Runnable runner = new Runnable() {
                 public void run() {
                     try {
-                        final List<FileMatch> results = scraper.search(
+                        final SearchResult result = scraper.search(
                                 inputs.getInput(Input.QUERY),
                                 inputs.getInput(Input.DEFS),
                                 inputs.getInput(Input.REFS),
@@ -353,7 +370,7 @@ public class SearchFrame extends JFrame {
                         SwingUtilities.invokeLater(new Runnable() {
                             @Override
                             public void run() {
-                                finishQuery(results);
+                                finishQuery(result);
                             }
                         });
                     }
@@ -385,25 +402,34 @@ public class SearchFrame extends JFrame {
                 server.serverSettings.proxyHost, server.serverSettings.proxyPort));
     }
     
-    private void finishQuery(List<FileMatch> matches) {
-        if (matches.size() == 0) {
+    private void stopSearch() {
+        if (searchRunning && scraper != null)
+            scraper.abort();
+    }
+    
+    private void finishQuery(SearchResult result) {
+        if (result.files().size() == 0) {
             String title = Resources.string(RES_EMPTY_RESULT_TITLE);
             Object message = Resources.string(RES_EMPTY_RESULT_MESSAGE);
             JOptionPane.showMessageDialog(this, message, title, JOptionPane.INFORMATION_MESSAGE);
         }
-        searchRunning = false;
-        searchButton.setEnabled(true);
-        statusLabel.queryFinshed(matches);
+        setRunning(false);
+        statusBar.queryFinshed(result);
         tree.expandFirst();
     }
     
     private void queryFailed(Exception e) {
-        searchRunning = false;
-        searchButton.setEnabled(true);
-        statusLabel.queryAborted();
+        setRunning(false);
+        statusBar.queryAborted();
         JOptionPane.showMessageDialog(this, "Query aborted: " + e.getMessage(),
                 "Error processing query", JOptionPane.ERROR_MESSAGE);
         e.printStackTrace();
+    }
+    
+    private void setRunning(boolean running) {
+        searchRunning = running;
+        searchButton.setEnabled(!running);
+        stopButton.setEnabled(running);
     }
     
     private void openLink(WebLink link) {
