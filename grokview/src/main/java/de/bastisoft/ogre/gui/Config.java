@@ -22,6 +22,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -78,6 +79,9 @@ class Config {
         INPUT_KEYS.put(Input.HIST,    "hist");
         INPUT_KEYS.put(Input.PROJECT, "project");
     }
+    
+    private static final String KEY_PROJECT_LIST     = "project.recent";
+    private static final String KEY_PROJECT_ENTRY    = "entry";
     
     
     // Frame state
@@ -165,6 +169,17 @@ class Config {
                 inputs.setInput(input, props.get(key));
         }
         
+        List<PropertyMap> projectHistory = props.submaps(KEY_PROJECT_LIST);
+        List<String> projects = new ArrayList<>();
+        for (PropertyMap map : projectHistory) {
+            String prj = map.get(KEY_PROJECT_ENTRY);
+            System.out.printf("prj: ", prj);
+            if (prj != null)
+                projects.add(prj);
+        }
+        
+        inputs.setProjects(projects);
+        
         return inputs;
     }
     
@@ -205,6 +220,13 @@ class Config {
                 String key = INPUT_KEYS.get(input);
                 if (key != null)
                     inputProps.set(key, server.queryInputs.getInput(input));
+            }
+            
+            int j = 0;
+            for (Iterator<String> it = server.queryInputs.getProjects().iterator(); it.hasNext(); j++) {
+                PropertyMap map = new PropertyMap();
+                map.set(KEY_PROJECT_ENTRY, it.next());
+                inputProps.addIndexed(map, KEY_PROJECT_LIST, j);
             }
             
             serverProps.add(inputProps, PREFIX_INPUT);

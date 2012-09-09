@@ -36,6 +36,7 @@ import javax.swing.JLabel;
 import javax.swing.JList;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.ListCellRenderer;
 
 import de.bastisoft.util.swing.SwingUtils;
 
@@ -79,7 +80,7 @@ class ServerChoicePanel extends JPanel {
         JLabel label = SwingUtils.makeLabel(Resources.label(RES_LABEL));
         
         combo = new JComboBox<>();
-        combo.setRenderer(new ServerRenderer());
+        combo.setRenderer(new ServerRenderer(combo.getRenderer()));
         label.setLabelFor(combo);
         
         
@@ -247,32 +248,47 @@ class ServerChoicePanel extends JPanel {
         
         if (servers.size() > 0) {
             int selectedIndex = servers.indexOf(selection.getSelected());
-            System.out.println("selectedIndex = " + selectedIndex);
             combo.setSelectedIndex(Math.max(selectedIndex, 0));
         }
         
         updateButtons();
     }
     
-    private static class ServerRenderer extends DefaultListCellRenderer {
+    private class ServerRenderer implements ListCellRenderer<Server> {
+        
+        private ListCellRenderer<? super Server> orig;
+        private DefaultListCellRenderer def;
 
+        ServerRenderer(ListCellRenderer<? super Server> renderer) {
+            if (renderer instanceof JLabel)
+                orig = renderer;
+            else
+                def = new DefaultListCellRenderer();
+        }
+        
         @Override
         public Component getListCellRendererComponent(
-                JList<? extends Object> list,
-                Object value,
+                JList<? extends Server> list,
+                Server value,
                 int index,
                 boolean isSelected,
                 boolean cellHasFocus) {
             
-            Component c = super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
+            JLabel label;
             
-            Server server = (Server) value;
-            if (server != null)
-                setText(server.serverSettings.name);
+            if (orig != null) {
+                orig.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
+                label = (JLabel) orig;
+            }
+            else {
+                def.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
+                label = def;
+            }
             
-            return c;
+            label.setText(value.serverSettings.name);
+            return label;
         }
-
+        
     }
     
 }

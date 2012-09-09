@@ -113,18 +113,29 @@ public class PropertyMap {
             map.put(key, value);
     }
     
+    /**
+     * Sets the value of a property to a string representation of a boolean value, which
+     * means either the string "true" or "false".
+     * 
+     * @param key the key of the property to be set
+     * @param value the value to be set
+     * @throws NullPointerException if the key is <code>null</code>
+     */
     public void set(String key, boolean value) {
         set(key, Boolean.toString(value));
     }
     
+    /**
+     * Sets the value of a property to a string representation of an integer value.
+     * 
+     * @param key the key of the property to be set
+     * @param value the value to be set
+     * @throws NullPointerException if the key is <code>null</code>
+     */
     public void set(String key, int value) {
         set(key, Integer.toString(value));
     }
     
-    /**
-     * 
-     * @return
-     */
     public Set<String> keys() {
         return Collections.unmodifiableSet(map.keySet());
     }

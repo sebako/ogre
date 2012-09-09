@@ -38,7 +38,6 @@ import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.Locale;
 
 import javax.swing.AbstractAction;
 import javax.swing.Action;
@@ -133,8 +132,8 @@ public class SearchFrame extends JFrame {
         this.loadedConfig = config;
         
         List<Image> icons = new ArrayList<>();
-        for (int size : new int[] {16, 32, 48, 128})
-            icons.add(Resources.image("tango/edit-find_" + size + ".png"));
+        for (int size : new int[] {16, 32, 48})
+            icons.add(Resources.image("gv-app-" + size + ".png"));
         setIconImages(icons);
         
         setDefaultCloseOperation(DO_NOTHING_ON_CLOSE);
@@ -489,7 +488,6 @@ public class SearchFrame extends JFrame {
     }
     
     public static void main(String[] args) {
-//        Locale.setDefault(Locale.ENGLISH);
         Config config = Config.readConfig();
         
         if (config.lookAndFeelSetting != LookAndFeelSetting.DEFAULT) {
