@@ -173,7 +173,6 @@ class Config {
         List<String> projects = new ArrayList<>();
         for (PropertyMap map : projectHistory) {
             String prj = map.get(KEY_PROJECT_ENTRY);
-            System.out.printf("prj: ", prj);
             if (prj != null)
                 projects.add(prj);
         }

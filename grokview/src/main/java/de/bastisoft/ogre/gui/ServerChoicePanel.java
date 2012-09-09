@@ -285,7 +285,7 @@ class ServerChoicePanel extends JPanel {
                 label = def;
             }
             
-            label.setText(value.serverSettings.name);
+            label.setText(value != null ? value.serverSettings.name : "");
             return label;
         }
         
