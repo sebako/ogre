@@ -114,6 +114,9 @@ public class SearchFrame extends JFrame {
         if (Desktop.isDesktopSupported())
             desktop = Desktop.getDesktop();
         
+        // Store config so that it can be used as a basis when saving the configuration on exit
+        this.loadedConfig = config;
+        
         selection = new ServerSelection();
         selection.setSelected(config.selectedServer);
         
@@ -127,9 +130,6 @@ public class SearchFrame extends JFrame {
             setLocationRelativeTo(null);
         
         serverChoicePanel.setServers(config.servers);
-        
-        // Store config so that it can be used as a basis when saving the configuration on exit
-        this.loadedConfig = config;
         
         List<Image> icons = new ArrayList<>();
         for (int size : new int[] {16, 32, 48})
@@ -180,7 +180,7 @@ public class SearchFrame extends JFrame {
         panel.setBorder(BorderFactory.createEtchedBorder());
         panel.setLayout(new GridBagLayout());
         
-        queryPanel = new QueryPanel(selection);
+        queryPanel = new QueryPanel(selection, loadedConfig.projectListLength);
         serverChoicePanel = new ServerChoicePanel(this, selection);
         
         searchButton = SwingUtils.makeButton(Resources.label(RES_SEARCH));

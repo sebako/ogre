@@ -71,10 +71,12 @@ class QueryPanel extends JPanel implements ServerSelectionListener {
     private JComboBox<String> projectCombo;
     
     private ServerSelection selection;
+    private int maxRecentProjects;
     private boolean autoUpdate;
     
-    QueryPanel(ServerSelection selection) {
+    QueryPanel(ServerSelection selection, int maxRecentProjects) {
         this.selection = selection;
+        this.maxRecentProjects = maxRecentProjects;
         
         setLayout(new GridBagLayout());
         
@@ -187,7 +189,7 @@ class QueryPanel extends JPanel implements ServerSelectionListener {
             for (Input input : Input.values())
                 fields.get(input).setText(srv.queryInputs.getInput(input));
             
-            projectCombo.setModel(new ProjectComboModel(srv));
+            projectCombo.setModel(new ProjectComboModel(srv, maxRecentProjects));
             
             autoUpdate = false;
         }
@@ -207,10 +209,12 @@ class QueryPanel extends JPanel implements ServerSelectionListener {
         private QueryInputs inputs;
         private List<String> projects;
         private List<ListDataListener> listeners = new CopyOnWriteArrayList<>();
+        private int maxlen;
         
-        ProjectComboModel(Server srv) {
+        ProjectComboModel(Server srv, int maxlen) {
             inputs = srv.queryInputs;
             projects = new ArrayList<>(inputs.getProjects());
+            this.maxlen = maxlen;
         }
 
         @Override
@@ -242,7 +246,7 @@ class QueryPanel extends JPanel implements ServerSelectionListener {
                 for (ListDataListener l : listeners)
                     l.intervalAdded(new ListDataEvent(this, ListDataEvent.INTERVAL_ADDED, 0, 0));
                 
-                if (projects.size() > 3) {
+                if (projects.size() > maxlen) {
                     int last = projects.size() - 1;
                     projects.remove(last);
                     for (ListDataListener l : listeners)

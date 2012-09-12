@@ -21,7 +21,10 @@ import java.awt.Frame;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
+import java.io.IOException;
+import java.io.InputStream;
 import java.text.MessageFormat;
+import java.util.Properties;
 
 import javax.swing.Icon;
 import javax.swing.JComponent;
@@ -29,7 +32,6 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JSeparator;
 
-import de.bastisoft.ogre.Scraper;
 import de.bastisoft.util.swing.dialog.CloseDialog;
 import de.bastisoft.util.swing.header.StatusHeader;
 
@@ -42,9 +44,13 @@ public class AboutDialog extends CloseDialog {
     private static final String RES_CLOSE_BUTTON = RES_PREFIX + "close.button";
     private static final String RES_HEADLINE     = RES_PREFIX + "headline";
     private static final String RES_SUBTITLE     = RES_PREFIX + "subtitle";
+
+    private String guiVersion;
+    private String ogreVersion;
     
     public AboutDialog(Frame owner) {
         super(owner, Resources.string(RES_DIALOG_TITLE), true, Resources.label(RES_CLOSE_BUTTON));
+        readVersions();
         setContent(makeWidgets());
         setResizable(false);
     }
@@ -54,7 +60,7 @@ public class AboutDialog extends CloseDialog {
         panel.setLayout(new GridBagLayout());
         
         Icon icon = Resources.icon("about");
-        String headline = MessageFormat.format(Resources.string(RES_HEADLINE), SearchFrame.VERSION);
+        String headline = MessageFormat.format(Resources.string(RES_HEADLINE), guiVersion);
         String subtitle = Resources.string(RES_SUBTITLE);
         StatusHeader header = new StatusHeader(headline, subtitle, icon, 400);
         
@@ -79,7 +85,7 @@ public class AboutDialog extends CloseDialog {
         
         String message = MessageFormat.format(
                 Resources.string(RES_TEXT),
-                Scraper.VERSION,
+                ogreVersion,
                 System.getProperty("java.runtime.name") + " " + System.getProperty("java.runtime.version"),
                 Runtime.getRuntime().freeMemory());
         JLabel contentLabel = new JLabel(message);
@@ -91,6 +97,31 @@ public class AboutDialog extends CloseDialog {
         panel.add(contentLabel, c);
         
         return panel;
+    }
+    
+    private void readVersions() {
+        guiVersion = readProperty("/de/bastisoft/ogre/gui/version.properties", "grokview.version");
+        ogreVersion = readProperty("/de/bastisoft/ogre/version.properties", "ogre.version");
+    }
+    
+    private static String readProperty(String path, String key) {
+        String version = null;
+        
+        try (InputStream in = AboutDialog.class.getResourceAsStream(path)) {
+            if (in != null) {
+                Properties p = new Properties();
+                p.load(in);
+                version = p.getProperty(key);
+            }
+        }
+        catch (IOException e) {
+            // ...
+        }
+        
+        if (version == null || version.startsWith("$"))
+            version = "[unreleased]";
+        
+        return version;
     }
 
 }

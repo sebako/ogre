@@ -100,6 +100,7 @@ class Config {
     // Other settings
     
     private static final String KEY_LOOK_AND_FEEL    = "look.and.feel";
+    private static final String KEY_PROJECT_LIST_LEN = "recent.projects.count";
     
     
     List<Server> servers;
@@ -107,6 +108,7 @@ class Config {
     FrameState frameState;
     LookAndFeelSetting lookAndFeelSetting;
     String lookAndFeel;
+    int projectListLength;
     
     Config() {
         servers = new ArrayList<>();
@@ -117,6 +119,7 @@ class Config {
         if (UIManager.getSystemLookAndFeelClassName().endsWith("windows.WindowsLookAndFeel"))
             lookAndFeelSetting = LookAndFeelSetting.SYSTEM;
         lookAndFeel = null;
+        projectListLength = 5;
     }
     
     private static Config read(PropertyMap props) {
@@ -136,13 +139,15 @@ class Config {
             c.frameState = frameState;
         
         c.lookAndFeelSetting = LookAndFeelSetting.CLASS;
-        c.lookAndFeel = props.get(KEY_LOOK_AND_FEEL, LookAndFeelSetting.DEFAULT.keyword);
+        c.lookAndFeel = props.get(KEY_LOOK_AND_FEEL, c.lookAndFeel);
         
         for (LookAndFeelSetting setting : LookAndFeelSetting.values())
             if (setting.keyword != null && setting.keyword.equalsIgnoreCase(c.lookAndFeel)) {
                 c.lookAndFeelSetting = setting;
                 break;
             }
+        
+        c.projectListLength = props.getInt(KEY_PROJECT_LIST_LEN, c.projectListLength);
         
         return c;
     }
@@ -261,6 +266,8 @@ class Config {
         default:
             props.set(KEY_LOOK_AND_FEEL, lookAndFeel);
         }
+        
+        props.set(KEY_PROJECT_LIST_LEN, projectListLength);
         
         return props;
     }

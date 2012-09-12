@@ -2,7 +2,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>de.bastisoft</groupId>
   <artifactId>grokview</artifactId>
-  <version>0.0.1-SNAPSHOT</version>
+  <version>0.0.1</version>
   <name>GrokView</name>
   <description>Graphical OpenGrok browser</description>
   <build>
@@ -16,17 +16,31 @@
         </configuration>
       </plugin>
     </plugins>
+    <resources>
+      <resource>
+        <directory>src/main/resources</directory>
+        <filtering>false</filtering>
+      </resource>
+      <resource>
+        <directory>src/main/resources</directory>
+        <filtering>true</filtering>
+        <includes>
+          <include>**/version.properties</include>
+        </includes>
+      </resource>
+    </resources>
+    <finalName>${artifactId}</finalName>
   </build>
   <dependencies>
-   <dependency>
-    <groupId>de.bastisoft</groupId>
-    <artifactId>ogre</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
-   </dependency>
-   <dependency>
-    <groupId>de.bastisoft</groupId>
-    <artifactId>swingplus</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
-   </dependency>
+    <dependency>
+      <groupId>de.bastisoft</groupId>
+      <artifactId>ogre</artifactId>
+      <version>0.0.1</version>
+    </dependency>
+    <dependency>
+      <groupId>de.bastisoft</groupId>
+      <artifactId>swingplus</artifactId>
+      <version>0.0.1</version>
+    </dependency>
   </dependencies>
 </project>

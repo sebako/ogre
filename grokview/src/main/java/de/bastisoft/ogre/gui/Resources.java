@@ -44,7 +44,7 @@ public class Resources {
     
     public static ResourceBundle strings() {
         if (strings == null)
-            strings = ResourceBundle.getBundle("strings.ogregui");
+            strings = ResourceBundle.getBundle("de.bastisoft.ogre.gui.strings.ogregui");
         return strings;
     }
     
@@ -108,7 +108,7 @@ public class Resources {
             names.put("about",      "gv-app-48.png");
             names.put("notice",     "notice.png");
             
-            icons = new IconCache("/img/", names);
+            icons = new IconCache("/de/bastisoft/ogre/gui/img/", names);
         }
         return icons;
     }
@@ -125,7 +125,7 @@ public class Resources {
     public static Image image(String name) {
         BufferedImage img = new BufferedImage(16, 16, BufferedImage.TYPE_BYTE_GRAY);
         
-        URL url = Resources.class.getResource("/img/" + name);
+        URL url = Resources.class.getResource("/de/bastisoft/ogre/gui/img/" + name);
         if (url != null) {
             try (InputStream in = url.openStream()) {
                 return ImageIO.read(in);
