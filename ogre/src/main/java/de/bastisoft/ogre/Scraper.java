@@ -25,6 +25,7 @@ import java.net.URL;
 import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Properties;
 
 import javax.xml.parsers.ParserConfigurationException;
 
@@ -36,8 +37,7 @@ import de.bastisoft.ogre.event.ResultReceiver;
 
 public class Scraper {
     
-    public static final String VERSION = "0.1";
-    private static final String USER_AGENT = "ogre/" + VERSION;
+    private String userAgent;
     
     private URL basicURL;
     private Proxy proxy;
@@ -207,14 +207,18 @@ public class Scraper {
         append(params, project, "project");
         
         try {
-            WebLink basicLink = followRedirect(new WebLink(basicURL, null));
+            WebLink basicLink = new WebLink(basicURL, null);
+            
+            if (pageLimit > 0)
+                basicLink = followRedirect(basicLink);
+            
             SearchResult result = new SearchResult(new WebLink(new URL(basicLink.url, "search?" + params), null));
             
             int current = 0;
             int pagecount = 0;
             
             WebLink next = null;
-            while ((next = result.nextPage()) != null && pagecount < pageLimit && !aborted) {
+            while (pagecount < pageLimit && !aborted && (next = result.nextPage()) != null) {
                 int pending = result.unfetchedPageCount();
                 if (fetchLines) pending += result.abridgedFileCount();
                 notifyProgress(Phase.FILES, current, pending);
@@ -259,7 +263,7 @@ public class Scraper {
                 }
             }
             
-            result.setPageLimitTriggered(next != null && pagecount >= pageLimit);
+            result.setPageLimitTriggered(pageLimit < 1 || next != null && pagecount >= pageLimit);
             result.setAborted(aborted);
             
             return result;
@@ -306,7 +310,7 @@ public class Scraper {
          * and issue a HEAD instead. */
         
         HttpURLConnection conn = (HttpURLConnection) (proxy != null ? link.url.openConnection(proxy) : link.url.openConnection());
-        conn.setRequestProperty("User-Agent", USER_AGENT);
+        conn.setRequestProperty("User-Agent", getUserAgent());
         if (link.referer != null)
             conn.setRequestProperty("Referer", link.referer.toExternalForm());
         try (InputStream in = conn.getInputStream()) {
@@ -317,12 +321,34 @@ public class Scraper {
     
     private FetchResponse fetch(WebLink link) throws IOException, ParserConfigurationException, SAXException {
         HttpURLConnection conn = (HttpURLConnection) (proxy != null ? link.url.openConnection(proxy) : link.url.openConnection());
-        conn.setRequestProperty("User-Agent", USER_AGENT);
+        conn.setRequestProperty("User-Agent", getUserAgent());
         if (link.referer != null)
             conn.setRequestProperty("Referer", link.referer.toExternalForm());
         try (InputStream in = conn.getInputStream()) {
             return new FetchResponse(new CorrectingReader(in, null).parse(), conn.getURL());
         }
+    }
+    
+    private String getUserAgent() {
+        if (userAgent == null) {
+            try (InputStream in = getClass().getResourceAsStream("version.properties")) {
+                if (in != null) {
+                    Properties p = new Properties();
+                    p.load(in);
+                    userAgent = p.getProperty("ogre.version");
+                }
+            }
+            catch (IOException e) {
+                // ...
+            }
+            
+            if (userAgent == null || userAgent.startsWith("$"))
+                userAgent = "unreleased";
+            
+            userAgent = "ogre/" + userAgent;
+        }
+        
+        return userAgent;
     }
     
 }

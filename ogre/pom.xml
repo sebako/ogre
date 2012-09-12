@@ -2,7 +2,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>de.bastisoft</groupId>
   <artifactId>ogre</artifactId>
-  <version>0.0.1-SNAPSHOT</version>
+  <version>0.0.1</version>
   <name>OGRE</name>
   <description>OpenGrok Retrieval Engine</description>
   <build>
@@ -16,5 +16,12 @@
         </configuration>
       </plugin>
     </plugins>
+    <resources>
+      <resource>
+        <directory>src/main/resources</directory>
+        <filtering>true</filtering>
+      </resource>
+    </resources>
+    <finalName>${artifactId}</finalName>
   </build>
 </project>
