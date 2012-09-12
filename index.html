@@ -31,7 +31,11 @@
     <!-- MAIN CONTENT -->
     <div id="main_content_wrap" class="outer">
       <section id="main_content" class="inner">
-        <h1>OGRE - OpenGrok Retrieval Engine</h1>
+        <hr><p>layout: simple</p>
+
+<h2>title: OGRE - OpenGrok Retrieval Engine</h2>
+
+<h1>OGRE - OpenGrok Retrieval Engine</h1>
 
 <p>OGRE is a Java library that allows programmatic access to <a href="http://hub.opensolaris.org/bin/view/Project+opengrok/">OpenGrok</a> servers.
 Since OpenGrok provides no web service API in the strict sense - it ouputs XHTML,
@@ -48,27 +52,42 @@ measures are provided to reduce server load or allow servers to react
 appropriately, namely:</p>
 
 <ul>
-<li> The number of result pages that are browsed can be limited;</li>
-<li> Pages providing more line matches than shown on the result pages are
+<li> the number of result pages that are browsed can be limited;</li>
+<li> pages providing more line matches than shown on the result pages are
 also visited by default, but this can be switched off;</li>
-<li> The library sets a custom User-Agent header when contacting HTTP servers.</li>
-</ul><p>Nonetheless, users are <em>strongly discouraged</em> from accessing a site with this
-library without the consent of the administrator.</p>
+<li> the library sets a custom User-Agent header when contacting HTTP servers.</li>
+</ul><p>Nonetheless, users are discouraged from accessing a site with this library without
+the consent of the administrator.</p>
 
 <h3>Basic search</h3>
 
-<p>The central starting point for a search run is the <code>Scraper</code> class. Before you
-can start searching, you must know the base URL of the OpenGrok server, that is
-to say, the URL that will bring up an empty search form. If a web proxy is
-necessary, proxy hostname and port must also be known.</p>
+<p>The central starting point for a search run is the <code>Scraper</code> class. Here is a
+simple example that shows how the class can be used:</p>
 
-<p>With this information, create a new <code>Scraper</code> instance:</p>
+<pre><code>URL baseURL = new URL("http://source.example.com/");
+Scraper scr = new Scraper(baseURL);
 
-<pre><code>Scraper scr = new Scraper(baseURL, proxy);
+String query = null, defs = null, path = null, hist = null, project = null;
+String refs = "str";
+
+SearchResult result = scr.search(query, defs, refs, path, hist, project);
+for (FileMatch fm : result.files())
+    System.out.println(fm.getFullName());
 </code></pre>
 
-<p>If no proxy is necessary, leave it <code>null</code>. Now you are ready to start your
-search. OpenGrok allows for five categories of search entries, plus project
+<p>If you must use a web proxy to access the server, you can use an alternative
+constructor:</p>
+
+<pre><code>Proxy proxy = new Proxy(Type.HTTP, new InetSocketAddress("proxy.example.com", 8080));
+Scraper scr = new Scraper(baseURL, proxy);
+</code></pre>
+
+<p>The basic model is that you initialise a Scraper instance with the basic URL
+of your OpenGrok server - that is to say, the URL that will bring up the
+search form - and then you can use this instance to place one or multiple
+search queries with the server.</p>
+
+<p>OpenGrok allows for five categories of search entries, plus project
 selection, and these are recognisable on most OpenGrok welcome pages as
 five entry fields (the project is usually selected in a list box); however
 in OGRE we will usually refer to them by certain shorter informal names:</p>
@@ -80,15 +99,156 @@ in OGRE we will usually refer to them by certain shorter informal names:</p>
 <li>File path (path)</li>
 <li>History (hist)</li>
 <li>Project (project)</li>
-</ol><p>When you have these, you start a search by calling the <code>search()</code> method
-of your scraper instance:</p>
+</ol><p>The <code>search()</code> method always takes these six parameters, but typically the
+user will not want to fill in search terms for every one of these fields.
+For unused fields, you can pass <code>null</code> or an empty or whitespace-only string.
+In that case the field will not be included in the query sent to the server.</p>
 
-<pre><code>List&lt;FileMatch&gt; results = scr.search(quety, defs, refs, path, hist, project);
+<h3>Understanding the search run</h3>
+
+<p>The Scraper class presents a simple enough interface, but it also offers a
+number of configuration options. In order to understand what these do, it is
+necessary to get a picture of how <code>search()</code> performs searches.</p>
+
+<p>Generally for a given combination of search terms, OpenGrok returns a list of
+files in the indexed source tree that match the query. The files are grouped
+by directory, and for every file there is a list of lines that match the query,
+thus making the file a match, although it is possible that a file contains
+no matching lines and is included in the results only because its path or a
+history entry matches.
+The files are listed on a sequence of result pages that have to be retrieved
+individually by the user; each page contains links to some, but not necessarily
+all preceding and subsequent pages.</p>
+
+<p>The result pages also list the matching lines for each file, but this list may
+be incomplete so as not to clutter the page in the case of files with many
+matching lines. That case is indicted by an "All" link beneath the last listed
+line that leads to a further page containing all the lines with matches for
+the file, given the search terms.</p>
+
+<p>In order to retrieve all this information, the scraper must do the following:</p>
+
+<ol>
+<li>Place an initial request to the server, resulting in the first of the
+result pages.</li>
+<li>Iterate over the result pages, recording the files.</li>
+<li>For every file that includes a link to the complete line match list,
+request that page and amend the line matches for that file.</li>
+</ol><p>The scraper can be configured to modify the order in which this happens, and
+restrictions can be placed on the amount of data that is retrieved, as
+explained in the following section.</p>
+
+<h3>Configuring the scraper instance</h3>
+
+<h4>Page limit</h4>
+
+<p>The number of result pages visited can be limited by calling <code>setPageLimit()</code>.
+The scraper will start at the first result page and then visit the remaining
+ones in order until the limit is reached. (OpenGrok supposedly orders search
+results by "relevance".)</p>
+
+<p>The following points should be noted:</p>
+
+<ul>
+<li> When a new scraper instance is created, it will have a default page limit
+of 20.</li>
+<li> Setting a limit of 0 or less will mean that no HTTP request is sent to the
+server at all. You may have set an invalid hostname and not even get an
+exception in that case.</li>
+<li> The page limit cannot really be switched off, although setting the limit
+to an extremely high number, such as <code>Integer.MAX_VALUE</code>, will have the
+same effect.</li>
+</ul><p>If the page limit is triggered, this can be determined from the search result
+object returned by the <code>search()</code> method:</p>
+
+<pre><code>if (result.pageLimitTriggered())
+    System.out.printf(
+            "Page limit was triggered: " +
+            "Only %d pages were fetched, " +
+            "at least %d more would have been available.%n",
+            result.fetchedPageCount(), result.unfetchedPageCount());
 </code></pre>
 
-<p>Of course the user doesn't have to supply search terms for all of these
-categories; the method accepts that <code>null</code> and empty or whitespace-only
-strings, and does not include such data in the query sent to the server.</p>
+<p>As long as there is at least one unfetched page, it is not certain how many
+pages <em>really</em> went unfetched (i.e. would have been fetched by a full
+search), because the last page could have contained more links to further
+result pages. This is indeed not a purely theoretical situation, as OpenGrok
+servers typically show, for example, links to pages 12 to 20 only from page
+11 on, not on page 10. This is why the number of unfetched pages that you
+can read from the result object refers only to known unfetched pages, and
+therefore only represents a minimum number of unfetched pages.</p>
+
+<h4>Retrieval of additional lines</h4>
+
+<p>By default the scraper will visit links to the full line match lists for files
+whose matching lines are not completely listed on the result page. These
+requests may be responsible for a fair amount of the overall network traffic
+generated by a single search, but the user may actually be only interested in
+the names of the matching files, or may for whatever reason be content with
+the excerpts found on the result pages. Therefore the retrieval of additional
+lines matches can be switched on and off by calling <code>setFetchLines()</code> with the
+appropriate boolean value.</p>
+
+<p>If it is switched off, and a file match has a link to the full line list, it
+is marked as abridged, so that the caller can determine whether the returned
+search results were affected by this setting. In addition, the result object
+offers the convenient method <code>abridgedFileCount()</code>.</p>
+
+<h4>Order of retrieval</h4>
+
+<p>If the retrieval of addtional line matches is switched on, by default it is
+deferred until after all result pages have been retrieved. This can be changed
+so that after every result page has been parsed, all line matches from that
+page are retrieved before the scraper continues with the next result page.
+This is mostly of interest if the caller has configured the scraper to issue
+notifications of interim results (see the next section).</p>
+
+<p>To change the retrieval order, call <code>fetchLinesLast()</code> with the appropriate
+boolean value.</p>
+
+<h3>Notifications while the search is running</h3>
+
+<p>The search may run for a considerable time, depending on server and network
+speed and result size. It is not unusual for it to last many seconds. The
+scraper offers to issue notifications of search progress before every
+HTTP request, and also delivery of partial search results. This way, an
+application can show a progress bar or fill the search result display with
+new file matches as they arrive.</p>
+
+<p>To make use of this, an application has to register a progress or result
+listener with its scraper instance <em>before</em> calling <code>search()</code>. The
+following two sections describe how to use these listeners.</p>
+
+<h4>Progress notifications</h4>
+
+<p>The progress listener has to methods:</p>
+
+<ul>
+<li> <code>progress()</code> is called before every request that is sent to the
+OpenGrok server. It takes three arguments:</li>
+</ul><pre><code> 1. Phase: The retrieval phase that the next request belongs to; this
+    means whether the scraper will request a new result page (phase
+    PAGES) or a list of line matches (phase LINES).
+ 2. Running count of the request that is currently being prepared;
+ 3. Minimum number of requests that are still pending (page and line
+    requests added up).
+
+The current and pending numbers can in principle be used to calculate
+a progress percentage. But note that due to the nature of the search run,
+the full number of requests is not known initially or during all
+intermediate stages, because every new result page can bring links
+to more result and line pages. The only fact that is certain is this:
+If the scraper was configured with `fetchLinesLast(true)` and the phase
+is LINES, then pending will not grow any more.
+</code></pre>
+
+<ul>
+<li> <code>currentCounts()</code> is called after every request and informs the
+listener about the updated counts of directories, files, and line
+matches.</li>
+</ul><h4>Intermediate results</h4>
+
+<p>(To be added.)</p>
       </section>
     </div>
 
